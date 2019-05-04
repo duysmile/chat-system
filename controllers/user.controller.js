@@ -15,16 +15,12 @@ function ResponseSuccess(message, data, res) {
     });
 }
 
-function getFileData(next) {
+function getFileData() {
     const listUsers = fs.readFileSync(userDataPath + '/users.json', 'utf8');
-    if (!listUsers) {
-        next(CustomError(Constants.ERROR.DATABASE));
-        return [];
-    }
     return listUsers;
 }
 
-function checkExistedUser(userId, listUsers) {
+function getIfUserExist(userId, listUsers) {
     const user = listUsers.find(function(tempUser) {
         return tempUser.id === userId;
     });
@@ -34,29 +30,22 @@ function checkExistedUser(userId, listUsers) {
     return user;
 }
 
-function findIndexUser(userId, listUsers) {
-    const indexUser = listUsers.findIndex(function(tempUser) {
-        return tempUser.id === userId;
-    });
-    return indexUser;
-}
-
 function checkExistedUsername(username, listUsers) {
-    const isExistedUser = listUsers.findIndex(function(user) {
+    const isExistedUser = listUsers.some(function(user) {
         return user.username === username;
     });
 
-    if (isExistedUser != -1) {
-        return true;
-    }
-    return false;
+    return isExistedUser;
 }
 
 // Controller -----------------------------------
 
 const getListUsers = function(req, res, next) {
     try {
-        const listUsers = getFileData(next);
+        const listUsers = getFileData();
+        if (!listUsers) {
+            return next(CustomError(Constants.ERROR.DATABASE));
+        }
         return ResponseSuccess(Constants.SUCCESS.GET_LIST_USERS, JSON.parse(listUsers), res);
     } catch (error) {
         console.error(error);
@@ -68,14 +57,17 @@ const getUserById = function(req, res, next) {
     try {
         const userId = parseInt(req.params.id);
 
-        let listUsers = getFileData(next);
+        let listUsers = getFileData();
+        if (!listUsers) {
+            return next(CustomError(Constants.ERROR.DATABASE));
+        }
 
         listUsers = JSON.parse(listUsers);
         if (!Array.isArray(listUsers)) {
             return next(CustomError(Constants.ERROR.DATABASE));
         }
 
-        const existedUser = checkExistedUser(userId, listUsers);
+        const existedUser = getIfUserExist(userId, listUsers);
         if (!existedUser) {
             return next(CustomError(Constants.ERROR.NOT_EXISTED_USER));
         }
@@ -136,13 +128,20 @@ const deleteUser = function(req, res, next) {
     try {
         const userId = parseInt(req.params.id);
 
-        let listUsers = getFileData(next);
+        let listUsers = getFileData();
+        if (!listUsers) {
+            return next(CustomError(Constants.ERROR.DATABASE));
+        }
 
         listUsers = JSON.parse(listUsers);
         if (!Array.isArray(listUsers)) {
             return next(CustomError(Constants.ERROR.DATABASE)); 
         }
-        const indexUser = findIndexUser(userId, listUsers);
+
+        const indexUser = listUsers.findIndex(function(tempUser) {
+            return tempUser.id === userId;
+        });
+
         if (indexUser === -1) {
             return next(CustomError(Constants.ERROR.NOT_EXISTED_USER)); 
         }
@@ -163,7 +162,10 @@ const updateUser = function(req, res, next) {
 
         const { username, password } = req.body;
 
-        let existingUsers = getFileData(next);
+        let existingUsers = getFileData();
+        if (!existingUsers) {
+            return next(CustomError(Constants.ERROR.DATABASE));
+        }
 
         existingUsers = JSON.parse(existingUsers);
         if (!Array.isArray(existingUsers)) {
@@ -172,11 +174,11 @@ const updateUser = function(req, res, next) {
 
         for (let user of existingUsers) {
             if (user.id === userId) {
-                const isExistedUser = existingUsers.findIndex(function(user) {
+                const indexUser = existingUsers.findIndex(function(user) {
                     return user.username === username && user.id !== userId;
                 });
     
-                if (isExistedUser !== -1) {
+                if (indexUser !== -1) {
                     return next(CustomError(Constants.ERROR.EXISTED_USERNAME)); 
                 }
 
