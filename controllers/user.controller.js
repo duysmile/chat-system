@@ -88,7 +88,6 @@ const updateUser = async function(req, res, next) {
                 $ne: ObjectId(userId)
             } 
         });
-
         if (isExistedUsername) {
             return next(new Error(Constants.ERROR.EXISTED_USERNAME));
         }
