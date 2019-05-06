@@ -3,34 +3,52 @@ const app = express();
 const port = 3000;
 
 const bodyParser = require('body-parser');
+const MongoClient = require('mongodb').MongoClient;
 
 const UserController = require('./controllers/user.controller');
 const UserMiddleware = require('./middlewares/user.middleware');
 
+const url = 'mongodb://localhost:27017';
+const dbName = 'node03';
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ type: 'application/json' }));
 
-// API create new user
-app.post('/api/v1/users', UserMiddleware.validateCreateUser, UserController.createUser);
+MongoClient.connect(url, { useNewUrlParser: true }, function(err, client) {
+    if (err) {
+        console.error(err);
+        process.exit(1);
+    }
+    
+    console.log('Connect to server successfully!');
+    const db = client.db(dbName);
 
-// API get list users
-app.get('/api/v1/users', UserController.getListUsers);
+    app.use(function(req, res, next) {
+        req.db = db;
+        next();
+    });
 
-// API update user by id
-app.put('/api/v1/users/:id', UserMiddleware.validateUpdateUser, UserController.updateUser);
+    // API create new user
+    app.post('/api/v1/users', UserMiddleware.validateInputForUser, UserController.createUser);
 
-// API get user by id
-app.get('/api/v1/users/:id', UserMiddleware.validateGetUserById, UserController.getUserById);
+    // API get list users
+    app.get('/api/v1/users', UserController.getListUsers);
 
-// API delete user by id
-app.delete('/api/v1/users/:id', UserMiddleware.validateDeleteUserById, UserController.deleteUser);
+    // API update user by id
+    app.put('/api/v1/users/:id', UserMiddleware.validateInputForUser, UserController.updateUser);
 
-// Error handling
-app.use(function (err, req, res, next) {
-    const errorMessage = err.message;
-    console.error(errorMessage);
-    return res.json({
-        message: errorMessage
+    // API get user by id
+    app.get('/api/v1/users/:id', UserController.getUserById);
+
+    // API delete user by id
+    app.delete('/api/v1/users/:id', UserController.deleteUser);
+
+    // Error handling
+    app.use(function (err, req, res, next) {
+        console.error(err);
+        return res.json({
+            message: err.message
+        });
     });
 });
 
