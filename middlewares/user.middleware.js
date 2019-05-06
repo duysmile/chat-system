@@ -1,10 +1,5 @@
 const Constants = require('../common/constants'); 
 
-// Method --------------------------------------------
-function CustomError(message) {
-    return new Error(message);
-}
-
 // Middleware ----------------------------------------
 
 const validateInputForUser = function(req, res, next) {
