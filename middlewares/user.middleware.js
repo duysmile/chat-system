@@ -36,27 +36,7 @@ const validateUpdateUser = function(req, res, next) {
     return next();
 };
 
-const validateGetUserById = function(req, res, next) {
-    const userId = parseInt(req.params.id);
-    if (isNaN(userId)) {
-        return next(CustomError(Constants.ERROR.INVALID_INTEGER));
-    }
-
-    return next();
-};
-
-const validateDeleteUserById = function(req, res, next) {
-    const userId = parseInt(req.params.id);
-    if (isNaN(userId)) {
-        return next(CustomError(Constants.ERROR.INVALID_INTEGER)); 
-    }
-
-    return next();
-};
-
 module.exports = {
     validateCreateUser,
-    validateUpdateUser,
-    validateGetUserById,
-    validateDeleteUserById
+    validateUpdateUser
 };
