@@ -28,7 +28,7 @@ const getUserById = async function(req, res, next) {
         const userCollection = req.db.collection('users');
         const userId = req.params.id;
 
-        let user = await userCollection.findOne({ _id: ObjectId(userId) });
+        const user = await userCollection.findOne({ _id: ObjectId(userId) });
 
         if (!user) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
@@ -91,6 +91,9 @@ const updateUser = async function(req, res, next) {
         if (isExistedUsername) {
             return next(new Error(Constants.ERROR.EXISTED_USERNAME));
         }
+        
+        // TODO: if only update username or password -> check undefined and update
+        // let userInfo = {};
 
         const updateInfo = { $set: { username, password } };
         const dataUpdate = await userCollection.findOneAndUpdate({ _id: ObjectId(userId) }, updateInfo);

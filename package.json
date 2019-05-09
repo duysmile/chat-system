@@ -9,8 +9,12 @@
   "author": "Duy",
   "license": "ISC",
   "dependencies": {
+    "@hapi/joi": "^15.0.1",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
+    "express-validation": "^1.0.2",
+    "express-validator": "^5.3.1",
+    "joi": "^14.3.1",
     "mongodb": "^3.2.3"
   },
   "devDependencies": {

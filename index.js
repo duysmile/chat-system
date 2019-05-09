@@ -5,8 +5,7 @@ const port = 3000;
 const bodyParser = require('body-parser');
 const MongoClient = require('mongodb').MongoClient;
 
-const UserController = require('./controllers/user.controller');
-const UserMiddleware = require('./middlewares/user.middleware');
+const userRoute = require('./apis/user.api');
 
 const url = 'mongodb://localhost:27017';
 const dbName = 'node03';
@@ -28,25 +27,21 @@ MongoClient.connect(url, { useNewUrlParser: true }, function(err, client) {
         next();
     });
 
-    // API create new user
-    app.post('/api/v1/users', UserMiddleware.validateInputForUser, UserController.createUser);
-
-    // API get list users
-    app.get('/api/v1/users', UserController.getListUsers);
-
-    // API update user by id
-    app.put('/api/v1/users/:id', UserMiddleware.validateInputForUser, UserController.updateUser);
-
-    // API get user by id
-    app.get('/api/v1/users/:id', UserController.getUserById);
-
-    // API delete user by id
-    app.delete('/api/v1/users/:id', UserController.deleteUser);
+    // load APIs
+    userRoute.load(app);
 
     // Error handling
     app.use(function (err, req, res, next) {
-        console.error(err);
-        return res.json({
+        console.error(JSON.stringify(err, null, 2));
+        if (Array.isArray(err.errors)) {
+            const messages = err.errors.map(function(item) {
+                return item.messages;
+            });
+            return res.status(400).json({
+                errors: messages
+            });
+        }
+        return res.status(400).json({
             message: err.message
         });
     });

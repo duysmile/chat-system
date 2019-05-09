@@ -6,7 +6,8 @@ const constants = {
         EXISTED_USERNAME: 'Username is existed.',
         COMMON: 'Opps, something went wrong.',
         REQUIRED_USERNAME: 'Username is a required field.',
-        REQUIRED_PASSWORD: 'Password is a required field.'
+        REQUIRED_PASSWORD: 'Password is a required field.',
+        REQUIRED_FIELD: 'Username or password must not be empty.'
     },
     SUCCESS: {
         GET_LIST_USERS: 'Get list users successfully.',
