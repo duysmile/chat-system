@@ -11,6 +11,29 @@ const createUser = function() {
     }; 
 };
 
+const updateUser = function() {
+    return {
+        body: 
+            Joi.object().keys({
+                username: Joi.string().min(3).max(30).alphanum(),
+                password: Joi.string().min(5).max(30)
+            }).or('username', 'password'),
+        params: {
+            id: Joi.string().max(24).min(12).alphanum()
+        }
+    };
+};
+
+const paramId = function() {
+    return {
+        params: {
+            id: Joi.string().max(24).min(12).alphanum()
+        }
+    }
+};
+
 module.exports = {
-    createUser
+    createUser,
+    updateUser,
+    paramId
 };

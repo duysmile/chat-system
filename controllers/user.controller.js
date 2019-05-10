@@ -1,14 +1,6 @@
 const Constants = require('../common/constants'); 
 const { ObjectId } = require('mongodb');
-
-// Method ---------------------------------------
-
-function ResponseSuccess(message, data, res) {
-    return res.status(200).json({
-        message,
-        data
-    });
-}
+const ResponseSuccess = require('../helpers/resonse.helper');
 
 // Controller -----------------------------------
 
@@ -71,7 +63,7 @@ const deleteUser = async function(req, res, next) {
         
         return ResponseSuccess(Constants.SUCCESS.DELETE_USER, dataDelete.value, res);
     } catch (error) {
-        return next(CustomError());
+        return next(error);
     }
 };
 
@@ -95,7 +87,16 @@ const updateUser = async function(req, res, next) {
         // TODO: if only update username or password -> check undefined and update
         // let userInfo = {};
 
-        const updateInfo = { $set: { username, password } };
+        let newUser = {
+            username,
+            password
+        };
+        Object.keys(newUser).forEach(function(key) {
+            if (newUser[key] === undefined) {
+                delete newUser[key];
+            }
+        });
+        const updateInfo = { $set: newUser };
         const dataUpdate = await userCollection.findOneAndUpdate({ _id: ObjectId(userId) }, updateInfo);
         if (!dataUpdate.value) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));

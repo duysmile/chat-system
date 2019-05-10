@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const MongoClient = require('mongodb').MongoClient;
 
 const userRoute = require('./apis/user.api');
+const productRoute = require('./apis/product.api');
 
 const url = 'mongodb://localhost:27017';
 const dbName = 'node03';
@@ -29,6 +30,7 @@ MongoClient.connect(url, { useNewUrlParser: true }, function(err, client) {
 
     // load APIs
     userRoute.load(app);
+    productRoute.load(app);
 
     // Error handling
     app.use(function (err, req, res, next) {
