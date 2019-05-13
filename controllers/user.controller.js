@@ -1,13 +1,13 @@
 const Constants = require('../common/constants'); 
 const { ObjectId } = require('mongodb');
 const ResponseSuccess = require('../helpers/resonse.helper');
+const User = require('../models/user');
 
 // Controller -----------------------------------
 
 const getListUsers = async function(req, res, next) {
     try {
-        const userCollection = req.db.collection('users');
-        const listUsers = await userCollection.find({}).toArray();
+        const listUsers = await User.find();
 
         return ResponseSuccess(Constants.SUCCESS.GET_LIST_USERS, listUsers, res);
     } catch (error) {
@@ -17,10 +17,9 @@ const getListUsers = async function(req, res, next) {
 
 const getUserById = async function(req, res, next) {
     try {
-        const userCollection = req.db.collection('users');
         const userId = req.params.id;
 
-        const user = await userCollection.findOne({ _id: ObjectId(userId) });
+        const user = await User.findOne({ _id: ObjectId(userId) });
 
         if (!user) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
@@ -35,13 +34,12 @@ const getUserById = async function(req, res, next) {
 const createUser = async function(req, res, next) {
     try {
         const { username, password } = req.body;
-
-        const userCollection = req.db.collection('users');
     
-        const isExistedUsername = await userCollection.findOne({ username });
+        const isExistedUsername = await User.findOne({ username });
         if (!isExistedUsername) {
-            const dataInsert = await userCollection.insertOne({ username, password });
-            return ResponseSuccess(Constants.SUCCESS.CREATE_USER, dataInsert.ops[0], res);
+            const newUser = new User({ username, password });
+            const dataInsert = await newUser.save();
+            return ResponseSuccess(Constants.SUCCESS.CREATE_USER, dataInsert, res);
         }
 
         return next(new Error(Constants.ERROR.EXISTED_USERNAME));
@@ -54,9 +52,7 @@ const deleteUser = async function(req, res, next) {
     try {
         const userId = req.params.id;
 
-        const userCollection = req.db.collection('users');
-
-        const dataDelete = await userCollection.findOneAndDelete({ _id: ObjectId(userId) });
+        const dataDelete = await User.findOneAndDelete({ _id: ObjectId(userId) });
         if (!dataDelete.value) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
         }
@@ -72,9 +68,7 @@ const updateUser = async function(req, res, next) {
         const userId = req.params.id;
         const { username, password } = req.body;
 
-        const userCollection = req.db.collection('users');
-
-        const isExistedUsername = await userCollection.findOne({ 
+        const isExistedUsername = await User.findOne({ 
             username, 
             _id: {
                 $ne: ObjectId(userId)
@@ -97,7 +91,7 @@ const updateUser = async function(req, res, next) {
             }
         });
         const updateInfo = { $set: newUser };
-        const dataUpdate = await userCollection.findOneAndUpdate({ _id: ObjectId(userId) }, updateInfo);
+        const dataUpdate = await User.findOneAndUpdate({ _id: ObjectId(userId) }, updateInfo);
         if (!dataUpdate.value) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
         }

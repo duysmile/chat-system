@@ -17,7 +17,7 @@ const getAll = async function(req, res, next) {
                 return user._id.toString() === product.userId.toString();
             });
             return {...product, user: users[index]};
-        })
+        });
 
         return ResponseSuccess('Get list products successfully', productsWithUsers, res);
     } catch(error) {
@@ -100,7 +100,7 @@ const update = async function(req, res, next) {
         if (existedNameProduct) {
             return next(new Error('Name of roduct is existed!'));
         }
-
+        
         let newProduct = {
             name,
             userId,

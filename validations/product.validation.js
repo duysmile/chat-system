@@ -9,8 +9,8 @@ const createProduct = function() {
             colors: Joi.array().items(Joi.string().alphanum().min(3).max(30)).required(),
             isAvailable: Joi.boolean().required(),
             payload: Joi.object().keys({
-                expiredAt: Joi.date().required(),
-                releasedAt: Joi.date().required()
+                releasedAt: Joi.date().required(),
+                expiredAt: Joi.date().required().greater(Joi.ref('releasedAt'))
             })
         }
     };
@@ -33,7 +33,7 @@ const update = function() {
             colors: Joi.array().items(Joi.string().alphanum().min(3).max(30)),
             isAvailable: Joi.boolean(),
             payload: Joi.object().keys({
-                expiredAt: Joi.date(),
+                expiredAt: Joi.date().greater(Joi.ref('releasedAt')),
                 releasedAt: Joi.date()
             })
         }).or('name', 'userId', 'price', 'colors', 'isAvailable', 'payload'),
