@@ -1,17 +1,17 @@
 const Constants = require('../common/constants');
 const ResponseSuccess = require('../helpers/resonse.helper');
 const { ObjectId } = require('mongodb');
+const Product = require('../models/product');
+const User = require('../models/user');
 
 const getAll = async function(req, res, next) {
     try {
-        const productCollection = req.db.collection('products');
-        const userCollection = req.db.collection('users');
-        const products = await productCollection.find({ isAvailable: true }).toArray();
+        const products = await Product.find({ isAvailable: true }).lean();
         const userIds = products.map(function(product) { 
             return ObjectId(product.userId);
         });
         
-        const users = await userCollection.find({ _id: { $in: userIds } }).toArray();
+        const users = await User.find({ _id: { $in: userIds } }).lean();
         const productsWithUsers = products.map(function(product) {
             const index = users.findIndex(function(user) {
                 return user._id.toString() === product.userId.toString();
@@ -27,8 +27,6 @@ const getAll = async function(req, res, next) {
 
 const create =  async function(req, res, next) {
     try {
-        const productCollection = req.db.collection('products');
-        const userCollection = req.db.collection('users');
         const {
             name,
             userId,
@@ -37,15 +35,15 @@ const create =  async function(req, res, next) {
             isAvailable,
             payload
         } = req.body;
-        const existedUser = await userCollection.findOne({ _id: ObjectId(userId) });
+        const existedUser = await User.findOne({ _id: ObjectId(userId) }).countDocuments();
         if (!existedUser) {
             return next(new Error('UserID is not existed!'));
         }
-        const existedNameProduct = await productCollection.findOne({ name });
-        if (!existedNameProduct) {
+        const existedNameProduct = await Product.findOne({ name }).lean();
+        if (existedNameProduct) {
             return next(new Error('Name of roduct is existed!'));
         }
-        const result = await productCollection.insertOne({
+        const product = new Product({
             name,
             price,
             colors,
@@ -53,7 +51,8 @@ const create =  async function(req, res, next) {
             payload,
             userId: ObjectId(userId)
         });
-        return ResponseSuccess('Create product successfully', result.ops, res);
+        const resultCreateProduct = await product.save();
+        return ResponseSuccess('Create product successfully', resultCreateProduct.toObject(), res);
     } catch (error) {
         return next(error);
     }
@@ -62,13 +61,11 @@ const create =  async function(req, res, next) {
 const getById = async function(req, res, next) {
     try {
         const { id } = req.params;
-        const productCollection = req.db.collection('products');
-        const userCollection = req.db.collection('users');
-        const product = await productCollection.findOne({ _id: ObjectId(id) });
+        const product = await Product.findOne({ _id: ObjectId(id) }).lean();
         if (!product) {
             return next(new Error('ProductID is not existed!'));
         }
-        const user = await userCollection.findOne({ _id: ObjectId(product.userId) });
+        const user = await User.findOne({ _id: ObjectId(product.userId) }).lean();
         const productWithUser = {...product, user};
 
         return ResponseSuccess('Get product by Id successfully', productWithUser, res);
@@ -80,8 +77,6 @@ const getById = async function(req, res, next) {
 const update = async function(req, res, next) {
     try {
         const { id } = req.params;
-        const productCollection = req.db.collection('products');
-        const userCollection = req.db.collection('users');
         const {
             name,
             userId,
@@ -91,12 +86,12 @@ const update = async function(req, res, next) {
             payload
         } = req.body;
 
-        const existedUser = await userCollection.findOne({ _id: ObjectId(userId) });
+        const existedUser = await User.findOne({ _id: ObjectId(userId) }).countDocuments();
         if (!existedUser) {
             return next(new Error('UserID is not existed!'));
         }
         
-        const existedNameProduct = await productCollection.findOne({ name, _id: { $ne: ObjectId(id)} });
+        const existedNameProduct = await Product.findOne({ name, _id: { $ne: ObjectId(id)} }).lean();
         if (existedNameProduct) {
             return next(new Error('Name of roduct is existed!'));
         }
@@ -116,14 +111,12 @@ const update = async function(req, res, next) {
             }
         });
 
-        const updateInfo = { $set: newProduct };
-
-        const result = await productCollection.findOneAndUpdate({ _id: ObjectId(id) }, updateInfo);
-        if (!result.value) {
+        const product = await Product.findOneAndUpdate({ _id: ObjectId(id) }, newProduct, { new:true, overwrite: true }).lean();
+        if (!product) {
             return next(new Error('ProductId is not existed!'));
         }
 
-        return ResponseSuccess('Update product successfully!', result.value, res);
+        return ResponseSuccess('Update product successfully!', product, res);
     } catch (error) {
         return next(error);
     }
@@ -132,14 +125,13 @@ const update = async function(req, res, next) {
 const deleteById = async function(req, res, next) {
     try {
         const { id } = req.params;
-        const productCollection = req.db.collection('products');
-        const result = await productCollection.findOneAndDelete({ _id: ObjectId(id) });
+        const product = await Product.findOneAndDelete({ _id: ObjectId(id) }).lean();
         
-        if (!result.value) {
+        if (!product) {
             return next(new Error('ProductID is not existed!'));
         }
 
-        return ResponseSuccess('Get product by Id successfully', result.value, res);
+        return ResponseSuccess('Get product by Id successfully', product, res);
     } catch (error) {
         return next(error);
     }

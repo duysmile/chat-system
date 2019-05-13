@@ -7,7 +7,7 @@ const User = require('../models/user');
 
 const getListUsers = async function(req, res, next) {
     try {
-        const listUsers = await User.find();
+        const listUsers = await User.find().lean();
 
         return ResponseSuccess(Constants.SUCCESS.GET_LIST_USERS, listUsers, res);
     } catch (error) {
@@ -19,7 +19,7 @@ const getUserById = async function(req, res, next) {
     try {
         const userId = req.params.id;
 
-        const user = await User.findOne({ _id: ObjectId(userId) });
+        const user = await User.findOne({ _id: ObjectId(userId) }).lean();
 
         if (!user) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
@@ -35,11 +35,11 @@ const createUser = async function(req, res, next) {
     try {
         const { username, password } = req.body;
     
-        const isExistedUsername = await User.findOne({ username });
+        const isExistedUsername = await User.findOne({ username }).countDocuments();
         if (!isExistedUsername) {
             const newUser = new User({ username, password });
             const dataInsert = await newUser.save();
-            return ResponseSuccess(Constants.SUCCESS.CREATE_USER, dataInsert, res);
+            return ResponseSuccess(Constants.SUCCESS.CREATE_USER, dataInsert.toObject(), res);
         }
 
         return next(new Error(Constants.ERROR.EXISTED_USERNAME));
@@ -52,12 +52,12 @@ const deleteUser = async function(req, res, next) {
     try {
         const userId = req.params.id;
 
-        const dataDelete = await User.findOneAndDelete({ _id: ObjectId(userId) });
-        if (!dataDelete.value) {
+        const dataDelete = await User.findOneAndDelete({ _id: ObjectId(userId) }).lean();
+        if (!dataDelete) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
         }
         
-        return ResponseSuccess(Constants.SUCCESS.DELETE_USER, dataDelete.value, res);
+        return ResponseSuccess(Constants.SUCCESS.DELETE_USER, dataDelete, res);
     } catch (error) {
         return next(error);
     }
@@ -73,14 +73,11 @@ const updateUser = async function(req, res, next) {
             _id: {
                 $ne: ObjectId(userId)
             } 
-        });
+        }).countDocuments();
         if (isExistedUsername) {
             return next(new Error(Constants.ERROR.EXISTED_USERNAME));
         }
-        
-        // TODO: if only update username or password -> check undefined and update
-        // let userInfo = {};
-
+    
         let newUser = {
             username,
             password
@@ -91,12 +88,12 @@ const updateUser = async function(req, res, next) {
             }
         });
         const updateInfo = { $set: newUser };
-        const dataUpdate = await User.findOneAndUpdate({ _id: ObjectId(userId) }, updateInfo);
-        if (!dataUpdate.value) {
+        const dataUpdate = await User.findOneAndUpdate({ _id: ObjectId(userId) }, updateInfo, { new: true }).lean();
+        if (!dataUpdate) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
         }
         
-        return ResponseSuccess(Constants.SUCCESS.UPDATE_USER, dataUpdate.value, res);
+        return ResponseSuccess(Constants.SUCCESS.UPDATE_USER, dataUpdate, res);
     } catch (error) {
         return next(error);
     }

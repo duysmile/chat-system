@@ -33,7 +33,7 @@ const update = function() {
             colors: Joi.array().items(Joi.string().alphanum().min(3).max(30)),
             isAvailable: Joi.boolean(),
             payload: Joi.object().keys({
-                expiredAt: Joi.date().greater(Joi.ref('releasedAt')),
+                expiredAt: Joi.date().when('releasedAt', { is: Joi.exist(), then: Joi.date().greater(Joi.ref('releasedAt')) }),
                 releasedAt: Joi.date()
             })
         }).or('name', 'userId', 'price', 'colors', 'isAvailable', 'payload'),
