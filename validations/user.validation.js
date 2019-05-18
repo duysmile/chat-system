@@ -1,4 +1,5 @@
 const Joi = require('@hapi/joi');
+const Constants = require('../common/constants');
 
 const createUser = function() {
     return {
@@ -19,7 +20,7 @@ const updateUser = function() {
                 password: Joi.string().min(5).max(30)
             }).or('username', 'password'),
         params: {
-            id: Joi.string().max(24).min(12).alphanum()
+            id: Joi.string().regex(Constants.REGEX.OBJECT_ID).required()
         }
     };
 };
@@ -27,7 +28,7 @@ const updateUser = function() {
 const paramId = function() {
     return {
         params: {
-            id: Joi.string().max(24).min(12).alphanum()
+            id: Joi.string().regex(Constants.REGEX.OBJECT_ID)
         }
     }
 };

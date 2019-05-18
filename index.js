@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 
 const userRoute = require('./apis/user.api');
 const productRoute = require('./apis/product.api');
+const loginRoute = require('./apis/login.api');
 
 // const url = 'mongodb://localhost:27017';
 // const dbName = 'node03';
@@ -23,12 +24,14 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ type: 'application/json' }));
 
 // load APIs
+loginRoute.load(app);
 userRoute.load(app);
 productRoute.load(app);
 
 // Error handling
 app.use(function (err, req, res, next) {
     console.error(JSON.stringify(err, null, 2));
+    
     if (Array.isArray(err.errors)) {
         const messages = err.errors.map(function(item) {
             return item.messages;

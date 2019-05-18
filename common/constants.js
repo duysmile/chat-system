@@ -15,6 +15,9 @@ const constants = {
         CREATE_USER: 'Create new user successfully.',
         DELETE_USER: 'Deleting user by id successfully.',
         UPDATE_USER: 'Update user successfully.'
+    },
+    REGEX: {
+        OBJECT_ID: /^(?=[a-f\d]{24}$)(\d+[a-f]|[a-f]+\d)/i
     }
 };
 

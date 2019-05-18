@@ -2,11 +2,19 @@ const Constants = require('../common/constants');
 const { ObjectId } = require('mongodb');
 const ResponseSuccess = require('../helpers/resonse.helper');
 const User = require('../models/user');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const privateKey = 'secretkey';
 
 // Controller -----------------------------------
 
 const getListUsers = async function(req, res, next) {
     try {
+        const { token } = req.query;
+        if (!token) {
+            return next(new Error('TOKEN_NOT_FOUND'));
+        }
+        jwt.verify(token, privateKey);
         const listUsers = await User.find().lean();
 
         return ResponseSuccess(Constants.SUCCESS.GET_LIST_USERS, listUsers, res);
@@ -34,15 +42,14 @@ const getUserById = async function(req, res, next) {
 const createUser = async function(req, res, next) {
     try {
         const { username, password } = req.body;
-    
-        const isExistedUsername = await User.findOne({ username }).countDocuments();
-        if (!isExistedUsername) {
-            const newUser = new User({ username, password });
-            const dataInsert = await newUser.save();
-            return ResponseSuccess(Constants.SUCCESS.CREATE_USER, dataInsert.toObject(), res);
-        }
+        
+        const salt = bcrypt.genSaltSync(2);
+        const hashPassword = bcrypt.hashSync(password, salt);
+        const newUser = await User.create({ username, password: hashPassword });
+        let dataUser = newUser.toObject();
+        delete dataUser.password;
 
-        return next(new Error(Constants.ERROR.EXISTED_USERNAME));
+        return ResponseSuccess(Constants.SUCCESS.CREATE_USER, dataUser, res);
     } catch (error) {
         return next(error);
     }
@@ -67,16 +74,6 @@ const updateUser = async function(req, res, next) {
     try {
         const userId = req.params.id;
         const { username, password } = req.body;
-
-        const isExistedUsername = await User.findOne({ 
-            username, 
-            _id: {
-                $ne: ObjectId(userId)
-            } 
-        }).countDocuments();
-        if (isExistedUsername) {
-            return next(new Error(Constants.ERROR.EXISTED_USERNAME));
-        }
     
         let newUser = {
             username,

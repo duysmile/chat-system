@@ -6,20 +6,9 @@ const User = require('../models/user');
 
 const getAll = async function(req, res, next) {
     try {
-        const products = await Product.find({ isAvailable: true }).lean();
-        const userIds = products.map(function(product) { 
-            return ObjectId(product.userId);
-        });
-        
-        const users = await User.find({ _id: { $in: userIds } }).lean();
-        const productsWithUsers = products.map(function(product) {
-            const index = users.findIndex(function(user) {
-                return user._id.toString() === product.userId.toString();
-            });
-            return {...product, user: users[index]};
-        });
+        const products = await Product.find({ isAvailable: true }).populate('user').lean();
 
-        return ResponseSuccess('Get list products successfully', productsWithUsers, res);
+        return ResponseSuccess('Get list products successfully', products, res);
     } catch(error) {
         return next(error);
     }
@@ -29,27 +18,24 @@ const create =  async function(req, res, next) {
     try {
         const {
             name,
-            userId,
+            user,
             price,
             colors,
             isAvailable,
             payload
         } = req.body;
-        const existedUser = await User.findOne({ _id: ObjectId(userId) }).countDocuments();
+        const existedUser = await User.findOne({ _id: ObjectId(user) }).lean();
         if (!existedUser) {
             return next(new Error('UserID is not existed!'));
         }
-        const existedNameProduct = await Product.findOne({ name }).lean();
-        if (existedNameProduct) {
-            return next(new Error('Name of roduct is existed!'));
-        }
+        
         const product = new Product({
             name,
             price,
             colors,
             isAvailable,
             payload,
-            userId: ObjectId(userId)
+            user: ObjectId(user)
         });
         const resultCreateProduct = await product.save();
         return ResponseSuccess('Create product successfully', resultCreateProduct.toObject(), res);
@@ -65,7 +51,7 @@ const getById = async function(req, res, next) {
         if (!product) {
             return next(new Error('ProductID is not existed!'));
         }
-        const user = await User.findOne({ _id: ObjectId(product.userId) }).lean();
+        const user = await User.findOne({ _id: ObjectId(product.user) }).lean();
         const productWithUser = {...product, user};
 
         return ResponseSuccess('Get product by Id successfully', productWithUser, res);
@@ -79,26 +65,21 @@ const update = async function(req, res, next) {
         const { id } = req.params;
         const {
             name,
-            userId,
+            user,
             price,
             colors,
             isAvailable,
             payload
         } = req.body;
 
-        const existedUser = await User.findOne({ _id: ObjectId(userId) }).countDocuments();
+        const existedUser = await User.findOne({ _id: ObjectId(user) }).lean();
         if (!existedUser) {
             return next(new Error('UserID is not existed!'));
         }
         
-        const existedNameProduct = await Product.findOne({ name, _id: { $ne: ObjectId(id)} }).lean();
-        if (existedNameProduct) {
-            return next(new Error('Name of roduct is existed!'));
-        }
-        
         let newProduct = {
             name,
-            userId,
+            user,
             price,
             colors,
             isAvailable,
