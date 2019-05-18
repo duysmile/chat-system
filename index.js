@@ -5,9 +5,9 @@ const port = 3000;
 const bodyParser = require('body-parser');
 // const MongoClient = require('mongodb').MongoClient;
 
-const userRoute = require('./apis/user.api');
-const productRoute = require('./apis/product.api');
-const loginRoute = require('./apis/login.api');
+const userRouter = require('./apis/user.api');
+const productRouter = require('./apis/product.api');
+const loginRouter = require('./apis/login.api');
 
 // const url = 'mongodb://localhost:27017';
 // const dbName = 'node03';
@@ -24,13 +24,14 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ type: 'application/json' }));
 
 // load APIs
-loginRoute.load(app);
-userRoute.load(app);
-productRoute.load(app);
+app.use('/api/v1/users/', userRouter);
+app.use('/api/v1/login/', loginRouter);
+app.use('/api/v1/products/', productRouter);
 
 // Error handling
 app.use(function (err, req, res, next) {
-    console.error(JSON.stringify(err, null, 2));
+    // console.error(JSON.stringify(err, null, 2));
+    console.error(err);
     
     if (Array.isArray(err.errors)) {
         const messages = err.errors.map(function(item) {

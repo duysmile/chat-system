@@ -3,19 +3,12 @@ const { ObjectId } = require('mongodb');
 const ResponseSuccess = require('../helpers/resonse.helper');
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const privateKey = 'secretkey';
 
 // Controller -----------------------------------
 
 const getListUsers = async function(req, res, next) {
     try {
-        const { token } = req.query;
-        if (!token) {
-            return next(new Error('TOKEN_NOT_FOUND'));
-        }
-        jwt.verify(token, privateKey);
-        const listUsers = await User.find().lean();
+        const listUsers = await User.find().select('-password').lean();
 
         return ResponseSuccess(Constants.SUCCESS.GET_LIST_USERS, listUsers, res);
     } catch (error) {
@@ -27,7 +20,7 @@ const getUserById = async function(req, res, next) {
     try {
         const userId = req.params.id;
 
-        const user = await User.findOne({ _id: ObjectId(userId) }).lean();
+        const user = await User.findOne({ _id: ObjectId(userId) }).select('-password').lean();
 
         if (!user) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
@@ -59,7 +52,9 @@ const deleteUser = async function(req, res, next) {
     try {
         const userId = req.params.id;
 
-        const dataDelete = await User.findOneAndDelete({ _id: ObjectId(userId) }).lean();
+        const dataDelete = await User.findOneAndDelete({ _id: ObjectId(userId) })
+            .select('-password')
+            .lean();
         if (!dataDelete) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
         }
@@ -75,9 +70,12 @@ const updateUser = async function(req, res, next) {
         const userId = req.params.id;
         const { username, password } = req.body;
     
+        const salt = bcrypt.genSaltSync(2);
+        const hashPassword = password && bcrypt.hashSync(password, salt);
+
         let newUser = {
             username,
-            password
+            password: hashPassword
         };
         Object.keys(newUser).forEach(function(key) {
             if (newUser[key] === undefined) {
@@ -85,7 +83,9 @@ const updateUser = async function(req, res, next) {
             }
         });
         const updateInfo = { $set: newUser };
-        const dataUpdate = await User.findOneAndUpdate({ _id: ObjectId(userId) }, updateInfo, { new: true }).lean();
+        const dataUpdate = await User.findOneAndUpdate({ _id: ObjectId(userId) }, updateInfo, { new: true })
+            .select('-password')
+            .lean();
         if (!dataUpdate) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
         }

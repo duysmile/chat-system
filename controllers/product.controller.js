@@ -6,7 +6,9 @@ const User = require('../models/user');
 
 const getAll = async function(req, res, next) {
     try {
-        const products = await Product.find({ isAvailable: true }).populate('user').lean();
+        const products = await Product.find({ isAvailable: true })
+            .populate('user', '-password')
+            .lean();
 
         return ResponseSuccess('Get list products successfully', products, res);
     } catch(error) {
