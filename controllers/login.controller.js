@@ -1,7 +1,6 @@
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const privateKey = 'secretkey';
+const jwtHelper = require('../helpers/jwt.helper');
 
 exports.login = async (req, res, next) => {
     try {
@@ -18,7 +17,8 @@ exports.login = async (req, res, next) => {
         }
         
         delete user.password;
-        const token = jwt.sign({ username }, privateKey, { expiresIn: 60 * 60 });
+
+        const token = jwtHelper.generateToken({ username });
         return res.status(200).json({
             message: 'Login successfully',
             data: user,

@@ -1,8 +1,9 @@
 const Constants = require('../common/constants'); 
 const { ObjectId } = require('mongodb');
-const ResponseSuccess = require('../helpers/resonse.helper');
+const ResponseSuccess = require('../helpers/response.helper');
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
+const _ = require('lodash');
 
 // Controller -----------------------------------
 
@@ -77,11 +78,9 @@ const updateUser = async function(req, res, next) {
             username,
             password: hashPassword
         };
-        Object.keys(newUser).forEach(function(key) {
-            if (newUser[key] === undefined) {
-                delete newUser[key];
-            }
-        });
+        
+        newUser = _.omitBy(newUser, _.isNil);
+        
         const updateInfo = { $set: newUser };
         const dataUpdate = await User.findOneAndUpdate({ _id: ObjectId(userId) }, updateInfo, { new: true })
             .select('-password')

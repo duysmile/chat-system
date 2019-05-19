@@ -2,22 +2,20 @@ const userController = require('../controllers/user.controller');
 const userValidation = require('../validations/user.validation');   
 const validate = require('express-validation');
 const authenMiddleware = require('../middlewares/authentication.middleware');
-const router = require('express').Router();
 
-// API create new user
-router.post('', validate(userValidation.createUser()), userController.createUser);
+exports.load = (app) => {
+    // API create new user
+    app.post('/api/v1/users', validate(userValidation.createUser()), userController.createUser);
 
-router.use(authenMiddleware.verifyToken);
-// API get list users
-router.get('', userController.getListUsers);
+    // API get list users
+    app.get('/api/v1/users', authenMiddleware.verifyToken, userController.getListUsers);
 
-// API update user by id
-router.put('/:id', validate(userValidation.updateUser()), userController.updateUser);
+    // API update user by id
+    app.put('/api/v1/users/:id', [authenMiddleware.verifyToken, validate(userValidation.updateUser())], userController.updateUser);
 
-// API get user by id
-router.get('/:id', validate(userValidation.paramId()), userController.getUserById);
+    // API get user by id
+    app.get('/api/v1/users/:id', [authenMiddleware.verifyToken, validate(userValidation.paramId())], userController.getUserById);
 
-// API delete user by id
-router.delete('/:id', validate(userValidation.paramId()), userController.deleteUser);
-
-module.exports = router;
+    // API delete user by id
+    app.delete('/api/v1/users/:id', [authenMiddleware.verifyToken, validate(userValidation.paramId())], userController.deleteUser);
+};
