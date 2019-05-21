@@ -1,8 +1,9 @@
 const Constants = require('../common/constants');
-const ResponseSuccess = require('../helpers/resonse.helper');
+const ResponseSuccess = require('../helpers/response.helper');
 const { ObjectId } = require('mongodb');
 const Product = require('../models/product');
 const User = require('../models/user');
+const _ = require('lodash');
 
 const getAll = async function(req, res, next) {
     try {
@@ -88,11 +89,12 @@ const update = async function(req, res, next) {
             payload
         };
 
-        Object.keys(newProduct).forEach(function(key) {
-            if (newProduct[key] === undefined) {
-                delete newProduct[key];
-            }
-        });
+        // Object.keys(newProduct).forEach(function(key) {
+        //     if (newProduct[key] === undefined) {
+        //         delete newProduct[key];
+        //     }
+        // });
+        newProduct = _.omitBy(newProduct, _.isNil);
 
         const product = await Product.findOneAndUpdate({ _id: ObjectId(id) }, newProduct, { new:true, overwrite: true }).lean();
         if (!product) {

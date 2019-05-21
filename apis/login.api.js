@@ -1,6 +1,5 @@
 const loginController = require('../controllers/login.controller');
-const router = require('express').Router();
 
-router.post('', loginController.login);
-
-module.exports = router;
+exports.load = (app) => {
+    app.post('/api/v1/login', loginController.login);
+};
