@@ -4,12 +4,14 @@ const ResponseSuccess = require('../helpers/response.helper');
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
 const _ = require('lodash');
+const jwtHelper = require('../helpers/jwt.helper');
+const mailHelper = require('../helpers/mail.helper');
 
 // Controller -----------------------------------
 
 const getListUsers = async function(req, res, next) {
     try {
-        const listUsers = await User.find().select('-password').lean();
+        const listUsers = await User.find().select('-password -token').lean();
 
         return ResponseSuccess(Constants.SUCCESS.GET_LIST_USERS, listUsers, res);
     } catch (error) {
@@ -21,7 +23,7 @@ const getUserById = async function(req, res, next) {
     try {
         const userId = req.params.id;
 
-        const user = await User.findOne({ _id: ObjectId(userId) }).select('-password').lean();
+        const user = await User.findOne({ _id: ObjectId(userId) }).select('-password -token').lean();
 
         if (!user) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
@@ -35,11 +37,11 @@ const getUserById = async function(req, res, next) {
 
 const createUser = async function(req, res, next) {
     try {
-        const { username, password } = req.body;
+        const { username, password, email } = req.body;
         
         const salt = bcrypt.genSaltSync(2);
         const hashPassword = bcrypt.hashSync(password, salt);
-        const newUser = await User.create({ username, password: hashPassword });
+        const newUser = await User.create({ username, email, password: hashPassword });
         let dataUser = newUser.toObject();
         delete dataUser.password;
 
@@ -54,7 +56,7 @@ const deleteUser = async function(req, res, next) {
         const userId = req.params.id;
 
         const dataDelete = await User.findOneAndDelete({ _id: ObjectId(userId) })
-            .select('-password')
+            .select('-password -token')
             .lean();
         if (!dataDelete) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
@@ -83,7 +85,7 @@ const updateUser = async function(req, res, next) {
         
         const updateInfo = { $set: newUser };
         const dataUpdate = await User.findOneAndUpdate({ _id: ObjectId(userId) }, updateInfo, { new: true })
-            .select('-password')
+            .select('-password -token')
             .lean();
         if (!dataUpdate) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
@@ -95,10 +97,55 @@ const updateUser = async function(req, res, next) {
     }
 };
 
+const forgotPassword = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+        const token = jwtHelper.generateToken({ email }, { expiresIn: 10 * 60 });
+        const updatedToken = {
+            $set: { token }
+        };
+        const isExistedEmail = await User.findOneAndUpdate({ email }, updatedToken, { new: true }).lean();
+        if (!isExistedEmail) {
+            return next(new Error('EMAIL_NOT_EXISTED'));
+        }
+        await mailHelper.sendMail(email, 'FORGOT_PASSWORD', { token });
+        return ResponseSuccess('Please check email to change password!', true, res);
+    } catch (error) {
+        return next(error);
+    }
+};
+
+const resetPassword = async (req, res, next) => {
+    try {
+        const { code, password } = req.body;
+        const { email } = jwtHelper.verifyToken(code);
+        const salt = bcrypt.genSaltSync(2);
+        const hashPassword = bcrypt.hashSync(password, salt);
+        const updatePassword = {
+            $set: { password: hashPassword }
+        };
+        const isChangedPassword = await User.findOneAndUpdate({ email, token: code }, updatePassword).lean();
+        if (!isChangedPassword) {
+            return next(new Error('ERROR_RESET_PASSWORD'));
+        }
+        const deletedToken = {
+            $set: {
+                token: null
+            }
+        };
+        await User.updateOne({ email }, deletedToken);
+        return ResponseSuccess('Change password successfully', true, res);
+    } catch (error) {
+        return next(error);
+    }
+};
+
 module.exports = {
     getListUsers,
     getUserById,
     createUser,
     deleteUser,
-    updateUser
+    updateUser,
+    forgotPassword,
+    resetPassword
 };

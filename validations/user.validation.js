@@ -5,7 +5,8 @@ const createUser = function() {
     return {
         body: {
             username: Joi.string().required().min(3).max(30).alphanum(),
-            password: Joi.string().required().min(5).max(30)
+            password: Joi.string().required().min(5).max(30),
+            email: Joi.string().email().required().max(300)
         },
         query: {},
         params: {}
@@ -17,8 +18,9 @@ const updateUser = function() {
         body: 
             Joi.object().keys({
                 username: Joi.string().min(3).max(30).alphanum(),
-                password: Joi.string().min(5).max(30)
-            }).or('username', 'password'),
+                password: Joi.string().min(5).max(30),
+                email: Joi.string().email().max(300)
+            }).or('username', 'password', 'email'),
         params: {
             id: Joi.string().regex(Constants.REGEX.OBJECT_ID).required()
         }
@@ -33,8 +35,28 @@ const paramId = function() {
     }
 };
 
+const forgotPassword = function() {
+    return {
+        body: {
+            email: Joi.string().email().required().max(300)
+        }
+    };
+};
+
+const resetPassword = function() {
+    return {
+        body: {
+            code: Joi.string().max(300).required(),
+            password: Joi.string().min(5).max(30).required(),
+            password_confirmation: Joi.any().valid(Joi.ref('password')).required()
+        }
+    }
+}
+
 module.exports = {
     createUser,
     updateUser,
-    paramId
+    paramId,
+    forgotPassword,
+    resetPassword
 };

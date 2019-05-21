@@ -18,4 +18,10 @@ exports.load = (app) => {
 
     // API delete user by id
     app.delete('/api/v1/users/:id', [authenMiddleware.verifyToken, validate(userValidation.paramId())], userController.deleteUser);
+
+    // API forgot password
+    app.post('/api/v1/users/forgot-password', validate(userValidation.forgotPassword()), userController.forgotPassword);
+
+    // API reset password
+    app.post('/api/v1/users/reset-password', validate(userValidation.resetPassword()), userController.resetPassword);
 };

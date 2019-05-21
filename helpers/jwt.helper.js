@@ -10,13 +10,16 @@ const privateKey = fs.readFileSync(privatePath, 'utf8');
 const publicKey = fs.readFileSync(publicPath, 'utf8');
 
 
-exports.generateToken = (data) => {
-    const token = jwt.sign(data, privateKey, { algorithm: 'RS256', expiresIn: 60 * 60 });
-    // const token = jwt.sign(data, privateKey, { expiresIn: 60 * 60 });
+exports.generateToken = (data, options = {}) => {
+    options = Object.assign({ 
+        algorithm: 'RS256', 
+        expiresIn: 60 * 60 
+    }, options);
+    const token = jwt.sign(data, privateKey, options);
     return token;
 };
 
-exports.verifyToken = (token) => {
-    const verifiedData = jwt.verify(token, publicKey);
+exports.verifyToken = (token, options= {}) => {
+    const verifiedData = jwt.verify(token, publicKey, options);
     return verifiedData;
 };

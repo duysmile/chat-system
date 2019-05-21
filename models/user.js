@@ -13,6 +13,16 @@ const userSchema = new mongoose.Schema({
         min: 5,
         max: 300,
         required: true
+    },
+    email: {
+        type: String,
+        max: 300,
+        required: true,
+        unique: true
+    },
+    token: {
+        type: String,
+        max: 300
     }
 });
 
