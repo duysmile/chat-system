@@ -5,9 +5,9 @@ const port = 3000;
 const bodyParser = require('body-parser');
 // const MongoClient = require('mongodb').MongoClient;
 
-const userRouter = require('./apis/user.api');
-const productRouter = require('./apis/product.api');
-const loginRouter = require('./apis/login.api');
+const userApis = require('./apis/user.api');
+const productApis = require('./apis/product.api');
+const loginApis = require('./apis/login.api');
 
 // const url = 'mongodb://localhost:27017';
 // const dbName = 'node03';
@@ -24,9 +24,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ type: 'application/json' }));
 
 // load APIs
-app.use('/api/v1/users/', userRouter);
-app.use('/api/v1/login/', loginRouter);
-app.use('/api/v1/products/', productRouter);
+userApis.load(app);
+loginApis.load(app);
+productApis.load(app);
 
 // Error handling
 app.use(function (err, req, res, next) {

@@ -1,11 +1,10 @@
-const jwt = require('jsonwebtoken');
-const privateKey = 'secretkey';
+const jwtHelper = require('../helpers/jwt.helper');
 
 exports.verifyToken = (req, res, next) => {
     const { token } = req.query;
     if (!token) {
         return next(new Error('TOKEN_NOT_FOUND'));
     }
-    jwt.verify(token, privateKey);
+    jwtHelper.verifyToken(token);
     return next();
 }
