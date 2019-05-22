@@ -7,11 +7,15 @@ const _ = require('lodash');
 const jwtHelper = require('../helpers/jwt.helper');
 const mailHelper = require('../helpers/mail.helper');
 
+const conditionNotDeleted = { 
+    deletedAt: { $exists: false },
+};
+
 // Controller -----------------------------------
 
 const getListUsers = async function(req, res, next) {
     try {
-        const listUsers = await User.find().select('-password -token').lean();
+        const listUsers = await User.find(conditionNotDeleted).select('-password -token').lean();
 
         return ResponseSuccess(Constants.SUCCESS.GET_LIST_USERS, listUsers, res);
     } catch (error) {
@@ -23,7 +27,7 @@ const getUserById = async function(req, res, next) {
     try {
         const userId = req.params.id;
 
-        const user = await User.findOne({ _id: ObjectId(userId) }).select('-password -token').lean();
+        const user = await User.findOne({ ...conditionNotDeleted, _id: ObjectId(userId) }).select('-password -token').lean();
 
         if (!user) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
@@ -37,11 +41,23 @@ const getUserById = async function(req, res, next) {
 
 const createUser = async function(req, res, next) {
     try {
-        const { username, password, email } = req.body;
+        const { 
+            username, 
+            password, 
+            email, 
+            gender,
+            geoPosition
+        } = req.body;
         
         const salt = bcrypt.genSaltSync(2);
         const hashPassword = bcrypt.hashSync(password, salt);
-        const newUser = await User.create({ username, email, password: hashPassword });
+        const newUser = await User.create({ 
+            username, 
+            email,
+            gender,
+            geoPosition, 
+            password: hashPassword 
+        });
         let dataUser = newUser.toObject();
         delete dataUser.password;
 
@@ -55,7 +71,7 @@ const deleteUser = async function(req, res, next) {
     try {
         const userId = req.params.id;
 
-        const dataDelete = await User.findOneAndDelete({ _id: ObjectId(userId) })
+        const dataDelete = await User.findOneAndDelete({ ...conditionNotDeleted, _id: ObjectId(userId) })
             .select('-password -token')
             .lean();
         if (!dataDelete) {
@@ -77,14 +93,17 @@ const updateUser = async function(req, res, next) {
         const hashPassword = password && bcrypt.hashSync(password, salt);
 
         let newUser = {
-            username,
+            username, 
+            email,
+            gender,
+            geoPosition,
             password: hashPassword
         };
         
         newUser = _.omitBy(newUser, _.isNil);
         
         const updateInfo = { $set: newUser };
-        const dataUpdate = await User.findOneAndUpdate({ _id: ObjectId(userId) }, updateInfo, { new: true })
+        const dataUpdate = await User.findOneAndUpdate({ ...conditionNotDeleted, _id: ObjectId(userId) }, updateInfo, { new: true })
             .select('-password -token')
             .lean();
         if (!dataUpdate) {
@@ -100,11 +119,11 @@ const updateUser = async function(req, res, next) {
 const forgotPassword = async (req, res, next) => {
     try {
         const { email } = req.body;
-        const token = jwtHelper.generateToken({ email }, { expiresIn: 10 * 60 });
-        const updatedToken = {
+        const token = jwtHelper.generateToken({ email, resetPassword: true }, { expiresIn: 10 * 60 });
+
+        const isExistedEmail = await User.findOneAndUpdate({ ...conditionNotDeleted, email }, {
             $set: { token }
-        };
-        const isExistedEmail = await User.findOneAndUpdate({ email }, updatedToken, { new: true }).lean();
+        }, { new: true }).lean();
         if (!isExistedEmail) {
             return next(new Error('EMAIL_NOT_EXISTED'));
         }
@@ -121,19 +140,19 @@ const resetPassword = async (req, res, next) => {
         const { email } = jwtHelper.verifyToken(code);
         const salt = bcrypt.genSaltSync(2);
         const hashPassword = bcrypt.hashSync(password, salt);
-        const updatePassword = {
+        
+        const requestingChangePassword = await User.findOneAndUpdate({ ...conditionNotDeleted, email, token: code }, {
             $set: { password: hashPassword }
-        };
-        const isChangedPassword = await User.findOneAndUpdate({ email, token: code }, updatePassword).lean();
-        if (!isChangedPassword) {
+        }).lean();
+        if (!requestingChangePassword) {
             return next(new Error('ERROR_RESET_PASSWORD'));
         }
-        const deletedToken = {
+
+        await User.updateOne({ email }, {
             $set: {
                 token: null
             }
-        };
-        await User.updateOne({ email }, deletedToken);
+        });
         return ResponseSuccess('Change password successfully', true, res);
     } catch (error) {
         return next(error);

@@ -1,6 +1,6 @@
 const jwtHelper = require('../helpers/jwt.helper');
 
-exports.verifyToken = (req, res, next) => {
+exports.getUserData = (req, res, next) => {
     const token = req.body.token || req.params.token || req.headers.token;
     if (!token) {
         return next(new Error('AUTHENTICATION_FAILED'));
@@ -13,5 +13,7 @@ exports.verifyToken = (req, res, next) => {
     if (dataVerified.resetPassword) {
         return next(new Error('INVALID_TOKEN'));
     }
+    req.body.author = dataVerified._id;
+    console.log(req.body.author);
     return next();
 }

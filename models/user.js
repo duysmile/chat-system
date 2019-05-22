@@ -23,8 +23,19 @@ const userSchema = new mongoose.Schema({
     token: {
         type: String,
         max: 300
+    },
+    gender: {
+        type: String,
+        enum: ['Male', 'Female', 'Other'],
+        required: true
+    },
+    geoPosition: {
+        type: [Number]
+    },
+    deletedAt: {
+        type: Date
     }
-});
+}, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;

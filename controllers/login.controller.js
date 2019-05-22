@@ -18,7 +18,7 @@ exports.login = async (req, res, next) => {
         
         delete user.password;
 
-        const token = jwtHelper.generateToken({ username });
+        const token = jwtHelper.generateToken({ username, _id: user._id });
         return res.status(200).json({
             message: 'Login successfully',
             data: user,

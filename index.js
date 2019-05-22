@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 
 const userApis = require('./apis/user.api');
 const productApis = require('./apis/product.api');
+const roomApis = require('./apis/room.api');
 const loginApis = require('./apis/login.api');
 
 // const url = 'mongodb://localhost:27017';
@@ -27,6 +28,7 @@ app.use(bodyParser.json({ type: 'application/json' }));
 userApis.load(app);
 loginApis.load(app);
 productApis.load(app);
+roomApis.load(app);
 
 // Error handling
 app.use(function (err, req, res, next) {
