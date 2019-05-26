@@ -2,6 +2,7 @@ const Constants = require('../common/constants');
 const ResponseSuccess = require('../helpers/response.helper');
 const Room = require('../models/room');
 const User = require('../models/user');
+const Message = require('../models/Message');
 const _ = require('lodash');
 
 const conditionNotDeleted = { 
@@ -10,19 +11,30 @@ const conditionNotDeleted = {
 
 const getAll = async function(req, res, next) {
     try {
-        const rooms = await Room.find(conditionNotDeleted)
+        const { author } = req.body;
+        let { page, limit } = req.query;
+        page = page || 1;
+        limit = limit || 10; 
+        const skip = (page - 1) * limit;
+        const rooms = await Room.find({ ...conditionNotDeleted, author })
+            .skip(+skip)
+            .limit(+limit)
             .populate([
                 {
                     path: 'author',
-                    select: '_id username'
+                    select: 'username'
                 },
                 {
                     path: 'members',
-                    select: '_id username'
+                    select: 'username'
                 },
                 {
                     path: 'lastMessage',
-                    select: 'author content'
+                    select: 'author content',
+                    populate: {
+                        path: 'author',
+                        select: 'username'
+                    }
                 }
             ])
             .lean();
@@ -72,22 +84,27 @@ const create =  async function(req, res, next) {
 const getById = async function(req, res, next) {
     try {
         const { id } = req.params;
-        const room = await room.findOne({ ...conditionNotDeleted, _id: id })
+        const { author } = req.body;
+        const room = await Room.findOne({ 
+            ...conditionNotDeleted, 
+            _id: id,
+            author: author
+        })
             .populate([
                 {
                     path: 'author',
-                    select: '_id username'
+                    select: 'username'
                 },
                 {
                     path: 'members',
-                    select: '_id username'
+                    select: 'username'
                 },
                 {
                     path: 'lastMessage',
                     select: 'author content',
                     populate: {
                         path: 'author',
-                        select: '_id username'
+                        select: 'username'
                     }
                 }
             ])
@@ -107,12 +124,16 @@ const update = async function(req, res, next) {
         const { id } = req.params;
         const {
             name,
+            author,
             members,
             lastMessage,
             type
         } = req.body;
 
-        const existedUsers = await User.find({ ...conditionNotDeleted, _id: { $in: member }}).lean();
+        const existedUsers = await User.find({ 
+            ...conditionNotDeleted, 
+            _id: { $in: member }
+        }).lean();
         if (!existedUsers) {
             return next(new Error('A member in list is not existed!'));
         }
@@ -132,7 +153,14 @@ const update = async function(req, res, next) {
         // });
         newRoom = _.omitBy(newRoom, _.isNil);
 
-        const room = await room.findOneAndUpdate({ ...conditionNotDeleted, _id: id }, newRoom, { new:true, overwrite: true }).lean();
+        const room = await Room.findOneAndUpdate({ 
+            ...conditionNotDeleted, 
+            _id: id,
+            author: author 
+        }, newRoom, { 
+            new:true, 
+            overwrite: true 
+        }).lean();
         if (!room) {
             return next(new Error('RoomId is not existed!'));
         }
@@ -146,7 +174,11 @@ const update = async function(req, res, next) {
 const deleteById = async function(req, res, next) {
     try {
         const { id } = req.params;
-        const room = await room.findOneAndUpdate({ ...conditionNotDeleted, _id: id }, {
+        const room = await Room.findOneAndUpdate({ 
+            ...conditionNotDeleted, 
+            _id: id,
+            author: author
+        }, {
             $set: {
                 deletedAt: new Date()
             }
@@ -155,6 +187,12 @@ const deleteById = async function(req, res, next) {
         if (!room) {
             return next(new Error('roomID is not existed!'));
         }
+
+        await Message.updateMany({ room: room._id }, {
+            $set: {
+                deletedAt: new Date()
+            }
+        });
 
         return ResponseSuccess('Delete room by Id successfully', room, res);
     } catch (error) {

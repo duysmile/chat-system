@@ -14,6 +14,5 @@ exports.getUserData = (req, res, next) => {
         return next(new Error('INVALID_TOKEN'));
     }
     req.body.author = dataVerified._id;
-    console.log(req.body.author);
     return next();
 }
