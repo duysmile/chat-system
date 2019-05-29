@@ -1,7 +1,7 @@
 const { mongoose } = require('./index');
 
 function limitMembers(members) {
-    return members.length <= 10 && members.length >= 2;
+    return members.length <= 10;
 }
 
 const roomSchema = new mongoose.Schema({

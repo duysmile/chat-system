@@ -1,58 +1,51 @@
 const Constants = require('../common/constants');
 const ResponseSuccess = require('../helpers/response.helper');
 const Room = require('../models/room');
-const Message = require('../models/Message');
+const Message = require('../models/message');
+const { roomRepository, messageRepository } = require('../repositories');
 const _ = require('lodash');
 
 const conditionNotDeleted = { 
     deletedAt: { $exists: false },
 };
 
-const getAll = async function(req, res, next) {
-    try {
-        let { page, limit } = req.query;
-        page = page || 1;
-        limit = limit || 10;
-        const skip = (page - 1)  * limit;
-        const messages = await Message.find(conditionNotDeleted)
-            .skip(+skip)
-            .limit(+limit)
-            .populate([
-                {
-                    path: 'author',
-                    select: '_id username'
-                },
-            ])
-            .lean();
-
-        return ResponseSuccess('Get list messages successfully', messages, res);
-    } catch(error) {
-        return next(error);
-    }
-};
-
 const create =  async function(req, res, next) {
     try {
+        const author = req.user.id;
         const {
-            author,
             content,
             room
         } = req.body;
+
+        console.log(room, author)
         
-        const existedRoom = await Room.findById(room).lean();
+        const existedRoom = await roomRepository.getOne({
+            where: {
+                _id: room,
+                members: author
+            }
+        });
+
         if (!existedRoom) {
             return next(new Error('NOT_EXISTED_ROOM'));
         }
-        const message = new Message({
+        const message = await messageRepository.create({
             author,
             content,
             room
         });
-        const resultCreateMessage = await message.save();
-        await Room.updateOne({ _id: room }, {
-            lastMessage: resultCreateMessage.toObject()._id
+
+        console.log(message);
+
+        await roomRepository.updateOne({
+            where: { 
+                _id: room 
+            }, 
+            data: {
+                lastMessage: message._id
+            }
         });
-        return ResponseSuccess('Create message successfully', resultCreateMessage.toObject(), res);
+        return ResponseSuccess('CREATE_MESSAGE_SUCCESS', message, res);
     } catch (error) {
         return next(error);
     }
@@ -61,24 +54,24 @@ const create =  async function(req, res, next) {
 const getById = async function(req, res, next) {
     try {
         const { id } = req.params;
-        const { author } = req.body;
-        const message = await Message.findOne({ 
-            ...conditionNotDeleted, 
-            _id: id,
-            author: author
-        })
-            .populate([
+        const author = req.user.id;
+        const message = await messageRepository.getOne({
+            where: {
+                _id: id,
+                author: author
+            },
+            populate: [
                 {
                     path: 'author',
                     select: '_id username'
                 }
-            ])
-            .lean();
+            ]
+        });
         if (!message) {
-            return next(new Error('MessageID is not existed!'));
+            return next(new Error('NOT_EXISTED_MESSAGE'));
         }
 
-        return ResponseSuccess('Get message by Id successfully', message, res);
+        return ResponseSuccess('GET_MESSAGE_SUCCESS', message, res);
     } catch (error) {
         return next(error);
     }
@@ -87,28 +80,26 @@ const getById = async function(req, res, next) {
 const update = async function(req, res, next) {
     try {
         const { id } = req.params;
+        const author = req.user.id;
         const {
-            author,
             content,
-            // room
         } = req.body;
 
-        let newMessage = {
-            // author,
-            content,
-            // room
-        };
-
-        const message = await Message.findOneAndUpdate({ 
-            ...conditionNotDeleted, 
+        const message = await messageRepository.getOneAndUpdate({
+            where: { 
             _id: id,
             author: author
-        }, newMessage, { new:true, overwrite: true }).lean();
+            },
+            data: {
+                content
+            }
+        });
+
         if (!message) {
-            return next(new Error('MessageId is not existed!'));
+            return next(new Error('NOT_EXISTED_MESSAGE'));
         }
 
-        return ResponseSuccess('Update message successfully!', message, res);
+        return ResponseSuccess('UPDATE_MESSAGE_SUCCESS', message, res);
     } catch (error) {
         return next(error);
     }
@@ -117,22 +108,17 @@ const update = async function(req, res, next) {
 const deleteById = async function(req, res, next) {
     try {
         const { id } = req.params;
-        const { author } = req.body;
-        const message = await Message.findOneAndUpdate({ 
-            ...conditionNotDeleted, 
+        const author = req.user.id;
+        const message = await messageRepository.deleteOne({ 
             _id: id,
             author: author
-        }, {
-            $set: {
-                deletedAt: new Date()
-            }
-        }, { new:true, overwrite: true }).lean();
+        });
         
-        if (!message) {
-            return next(new Error('roomID is not existed!'));
+        if (message.n === 0) {
+            return next(new Error('NOT_EXISTED_MESSAGE'));
         }
 
-        return ResponseSuccess('Delete room by Id successfully', message, res);
+        return ResponseSuccess('DELETE_MESSAGE_SUCCESS', message, res);
     } catch (error) {
         return next(error);
     }
@@ -140,39 +126,42 @@ const deleteById = async function(req, res, next) {
 
 const getByRoom = async (req, res, next) => {
     try {
-        const { author } = req.body;
+        const author = req.user.id;
         const room = req.params.id;
-        const existedRoom = await Room.findOne({ 
-            _id: room,
-            members: author
-        }).select('_id').lean();
+        const existedRoom = await roomRepository.getOne({
+            where: { 
+                _id: room,
+                members: author
+            },
+            fields: '_id'
+        });
         if (!existedRoom) {
             return next(new Error('NOT_EXISTED_ROOM'));
         }
 
         let { page, limit } = req.query;
-        page = page || 1;
-        limit = limit || 10;
-        const skip = (page - 1) * limit;
-        const messages = await Message.find({ room })
-            .skip(+skip)
-            .limit(+limit)
-            .select('content author')
-            .populate({
+        
+        const messages = await messageRepository.getAll({
+            where: { 
+                room
+            },
+            page: page,
+            limit: limit,
+            fields: 'createdAt content author',
+            populate: {
                 path: 'author',
                 select: 'username'
-            })
-            .sort('createdAt')
-            .lean();
+            },
+            sort: '-createdAt'
+        });
 
-        return ResponseSuccess('Get list message in room succcessfully', messages, res);
+        return ResponseSuccess('GET_MESSAGES_SUCCESS', messages, res);
     } catch (error) {
         return next(error);
     }
 };
 
 module.exports = {
-    getAll,
     create,
     getById,
     update,

@@ -1,25 +1,19 @@
 const Constants = require('../common/constants');
 const ResponseSuccess = require('../helpers/response.helper');
-const Room = require('../models/room');
-const User = require('../models/user');
-const Message = require('../models/Message');
-const _ = require('lodash');
-
-const conditionNotDeleted = { 
-    deletedAt: { $exists: false },
-};
+const { roomRepository, userRepository, messageRepository } = require('../repositories');
 
 const getAll = async function(req, res, next) {
     try {
-        const { author } = req.body;
+        const author = req.user.id;
         let { page, limit } = req.query;
-        page = page || 1;
-        limit = limit || 10; 
-        const skip = (page - 1) * limit;
-        const rooms = await Room.find({ ...conditionNotDeleted, author })
-            .skip(+skip)
-            .limit(+limit)
-            .populate([
+        
+        const rooms = await roomRepository.getAll({
+            page,
+            limit,
+            where: {
+                members: author
+            },
+            populate: [
                 {
                     path: 'author',
                     select: 'username'
@@ -36,8 +30,8 @@ const getAll = async function(req, res, next) {
                         select: 'username'
                     }
                 }
-            ])
-            .lean();
+            ]
+        });
 
         return ResponseSuccess('Get list rooms successfully', rooms, res);
     } catch(error) {
@@ -47,35 +41,41 @@ const getAll = async function(req, res, next) {
 
 const create =  async function(req, res, next) {
     try {
+
+        const author = req.user.id;
         const {
             name,
-            author,
             members,
             lastMessage,
             type
         } = req.body;
+
         // remove all duplicate member
         let listMembers = Array.from(new Set(members));
-        const existedMembers = await User.countDocuments({ ...conditionNotDeleted, _id: { $in: members } });
+        const existedMembers = await userRepository.count({ 
+            _id: { 
+                $in: members 
+            } 
+        });
 
         if (existedMembers !== members.length) {
             return next(new Error('A member in list is not existed!'));
         }
 
-        const existedAuthorInMembers = members.find(item => item === author);
-        if (!existedAuthorInMembers) {
+        const isExistedAuthorInMembers = members.includes(author);
+        if (!isExistedAuthorInMembers) {
             listMembers = listMembers.concat(author);
         }
         
-        const room = new Room({
+        const room = await roomRepository.create({
             name,
             author,
-            members,
+            type,
             lastMessage,
-            type
-        });
-        const resultCreateRoom = await room.save();
-        return ResponseSuccess('Create room successfully', resultCreateRoom.toObject(), res);
+            members: listMembers
+        })
+        
+        return ResponseSuccess('CREATE_ROOM_SUCCESS', room, res);
     } catch (error) {
         return next(error);
     }
@@ -84,13 +84,14 @@ const create =  async function(req, res, next) {
 const getById = async function(req, res, next) {
     try {
         const { id } = req.params;
-        const { author } = req.body;
-        const room = await Room.findOne({ 
-            ...conditionNotDeleted, 
-            _id: id,
-            author: author
-        })
-            .populate([
+        const author = req.user.id;
+
+        const room = await roomRepository.getOne({
+            where: {
+                _id: id,
+                members: author
+            },
+            populate: [
                 {
                     path: 'author',
                     select: 'username'
@@ -107,65 +108,14 @@ const getById = async function(req, res, next) {
                         select: 'username'
                     }
                 }
-            ])
-            .lean();
+            ]
+        });
+
         if (!room) {
-            return next(new Error('RoomID is not existed!'));
+            return next(new Error('NOT_EXISTED_ROOM'));
         }
 
-        return ResponseSuccess('Get room by Id successfully', room, res);
-    } catch (error) {
-        return next(error);
-    }
-};
-
-const update = async function(req, res, next) {
-    try {
-        const { id } = req.params;
-        const {
-            name,
-            author,
-            members,
-            lastMessage,
-            type
-        } = req.body;
-
-        const existedUsers = await User.find({ 
-            ...conditionNotDeleted, 
-            _id: { $in: member }
-        }).lean();
-        if (!existedUsers) {
-            return next(new Error('A member in list is not existed!'));
-        }
-        
-        let newRoom = {
-            name,
-            author,
-            members,
-            lastMessage,
-            type
-        };
-
-        // Object.keys(newroom).forEach(function(key) {
-        //     if (newroom[key] === undefined) {
-        //         delete newroom[key];
-        //     }
-        // });
-        newRoom = _.omitBy(newRoom, _.isNil);
-
-        const room = await Room.findOneAndUpdate({ 
-            ...conditionNotDeleted, 
-            _id: id,
-            author: author 
-        }, newRoom, { 
-            new:true, 
-            overwrite: true 
-        }).lean();
-        if (!room) {
-            return next(new Error('RoomId is not existed!'));
-        }
-
-        return ResponseSuccess('Update room successfully!', room, res);
+        return ResponseSuccess('GET_ROOM_SUCCESS', room, res);
     } catch (error) {
         return next(error);
     }
@@ -173,28 +123,51 @@ const update = async function(req, res, next) {
 
 const deleteById = async function(req, res, next) {
     try {
+        const author = req.user.id;        
         const { id } = req.params;
-        const room = await Room.findOneAndUpdate({ 
-            ...conditionNotDeleted, 
+        const room = await roomRepository.deleteOne({ 
             _id: id,
             author: author
-        }, {
-            $set: {
-                deletedAt: new Date()
-            }
-        }, { new:true, overwrite: true }).lean();
+        });
         
-        if (!room) {
-            return next(new Error('roomID is not existed!'));
+        if (room.n === 0) {
+            return next(new Error('NOT_EXISTED_ROOM'));
         }
 
-        await Message.updateMany({ room: room._id }, {
-            $set: {
-                deletedAt: new Date()
-            }
+        await messageRepository.deleteMany({
+            room: room._id
         });
 
-        return ResponseSuccess('Delete room by Id successfully', room, res);
+        return ResponseSuccess('DELETE_ROOM_SUCCESS', room, res);
+    } catch (error) {
+        return next(error);
+    }
+};
+
+const inviteMembersToGroup = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const {
+            members,
+        } = req.body;
+        const author = req.user.id;
+
+        const listMember = Array.from(new Set(members));
+        const countExistedUsers = await userRepository.count({ 
+            _id: listMember
+        });
+
+        if (countExistedUsers < listMember.length) {
+            return next(new Error('NOT_EXISTED_MEMBERS'));
+        }
+
+        const room = await roomRepository.addMember({ author, id, members });
+
+        if (!room) {
+            return next(new Error('NOT_EXISTED_ROOM'));
+        }
+
+        return ResponseSuccess('Invite members to room successfully!', room, res);
     } catch (error) {
         return next(error);
     }
@@ -204,6 +177,6 @@ module.exports = {
     getAll,
     create,
     getById,
-    update,
+    inviteMembersToGroup,
     deleteById
 };

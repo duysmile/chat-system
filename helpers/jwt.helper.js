@@ -13,7 +13,7 @@ const publicKey = fs.readFileSync(publicPath, 'utf8');
 exports.generateToken = (data, options = {}) => {
     options = Object.assign({ 
         algorithm: 'RS256', 
-        expiresIn: 60 * 60 
+        expiresIn: 60 * 60 * 24 
     }, options);
     const token = jwt.sign(data, privateKey, options);
     return token;

@@ -4,7 +4,6 @@ const Constants = require('../common/constants');
 const createMessage = function() {
     return {
         body: {
-            author: Joi.string().regex(Constants.REGEX.OBJECT_ID).required(),
             content: Joi.string().min(1).max(3000).required(),
             room: Joi.string().regex(Constants.REGEX.OBJECT_ID).required()
         }
@@ -32,8 +31,21 @@ const update = function() {
     } 
 };
 
+const getMessages = function() {
+    return {
+        query: Joi.object().keys({
+            page: Joi.number().default(1),
+            limit: Joi.number().max(100).default(10)
+        }),
+        params: {
+            id: Joi.string().regex(Constants.REGEX.OBJECT_ID)
+        }
+    }
+};
+
 module.exports = {
     createMessage,
     paramId,
-    update
+    update,
+    getMessages
 };
