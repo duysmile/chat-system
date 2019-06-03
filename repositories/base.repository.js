@@ -1,6 +1,8 @@
+const { mongoose } = require('../models');
+
 module.exports = class BaseRepository {
-    constructor(model) {
-        this.model = model;
+    constructor(modelName) {
+        this.model = mongoose.model(modelName);
     }
 
     getAll(options) {
@@ -22,8 +24,8 @@ module.exports = class BaseRepository {
         const skip = (newOptions.page - 1) * newOptions.limit;
 
         return this.model.find(newOptions.where)
-            .skip(skip)
-            .limit(newOptions.limit)
+            .skip(parseInt(skip))
+            .limit(parseInt(newOptions.limit))
             .select(newOptions.fields)
             .sort(newOptions.sort)
             .populate(newOptions.populate)

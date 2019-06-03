@@ -12,10 +12,8 @@ const conditionNotDeleted = {
 const create =  async function(req, res, next) {
     try {
         const author = req.user.id;
-        const {
-            content,
-            room
-        } = req.body;
+        const data = req.body;
+        // pick/omit cuar lodash
 
         console.log(room, author)
         
@@ -29,11 +27,8 @@ const create =  async function(req, res, next) {
         if (!existedRoom) {
             return next(new Error('NOT_EXISTED_ROOM'));
         }
-        const message = await messageRepository.create({
-            author,
-            content,
-            room
-        });
+        data.author = author;
+        const message = await messageRepository.create(data);
 
         console.log(message);
 
@@ -87,8 +82,8 @@ const update = async function(req, res, next) {
 
         const message = await messageRepository.getOneAndUpdate({
             where: { 
-            _id: id,
-            author: author
+                _id: id,
+                author: author
             },
             data: {
                 content

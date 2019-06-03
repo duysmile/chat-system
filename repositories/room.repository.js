@@ -3,7 +3,7 @@ const Room = require('../models/room');
 
 module.exports = class RoomRepository extends BaseRepository {
     constructor() {
-        super(Room);
+        super('Room');
     }
 
     async create({ members, name, author, type, lastMessage }) {

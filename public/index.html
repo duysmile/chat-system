@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      .form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      .form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      .form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li div { padding: 5px 10px; margin: 10px 20px 5px 20px; color: white; }
+      #messages li.right div { background: blue; border-radius: 8px 8px 0 8px;}
+      #messages li.left div { background: #cecece; border-radius: 8px 8px 8px 0;}
+      .right { display: flex; justify-content: flex-end; }
+      .left { display: flex; justify-content: flex-start; }
+    </style>
+      <script src="./socket.io.js"></script>
+      <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"></script>
+  </head>
+  <body>
+    <script type="text/javascript">
+      const socket = io('http://localhost:3000');
+      socket.on('send-message', function(msg) {
+        $('#messages').append('<li class="left"><div>' + msg + '</div></li>');
+      });
+      socket.on('receive-typing', function() {
+        console.log('typing');
+        $('#typing').remove();
+        $('#messages').append('<li id="typing" class="left"><div>' + '...' + '</div></li>');
+      });
+      socket.on('receive-done-typing', function() {
+        console.log('done-typing');
+        $('#typing').remove();
+      });
+    </script>
+    <ul id="messages"></ul>
+    <form class="form">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+
+    <script type="text/javascript">
+      let doneTypingTimer;
+      let typingTimer;
+      $('#m').on('input', function(event) {
+        if (!typingTimer) {
+          socket.emit('send-typing', null, function(err, callback) {
+            if (err) {
+              alert('Oops, something went wrong!');
+              return;
+            }
+            console.log('send typing');
+          });
+        }
+        clearTimeout(typingTimer);
+
+        typingTimer = setTimeout(function() {
+          socket.emit('send-typing', null, function(err, callback) {
+            if (err) {
+              alert('Oops, something went wrong!');
+              return;
+            }
+            console.log('send typing') ;
+          });
+        }, 800);
+      });
+      $('#m').on('keydown', function(event) {
+        clearTimeout(doneTypingTimer);
+      });
+      $('#m').on('keyup', function(event) {
+        clearTimeout(doneTypingTimer);
+        doneTypingTimer = setTimeout(function() {
+          socket.emit('send-done-typing', null, function(err, callback) {
+            if (err) {
+              alert('Oops, something went wrong!');
+              return;
+            }
+            typingTimer = null;
+            console.log('send done') 
+          });
+        }, 800);
+      });
+      $('form').on('submit', function(event) {
+        event.preventDefault();
+        const msg = $('#m').val().trim();
+        if (msg === '') {
+          return;
+        }
+        socket.emit('receiving-message', {
+          message: msg
+        }, function(error, returningData) {
+          if (error) {
+            alert('Oops, something when wrong!');
+            return;
+          }
+          $('#messages').append('<li class="right"><div>' + returningData.message + '</div></li>');
+          clearTimeout(typingTimer);
+          clearTimeout(doneTypingTimer);
+          socket.emit('send-done-typing', null, function(err, callback) {
+            if (err) {
+              alert('Oops, something went wrong!');
+              return;
+            }
+            typingTimer = null;
+            console.log('send done') 
+          });
+        });
+        $('#m').val('');
+      });
+    </script>
+  </body>
+</html>

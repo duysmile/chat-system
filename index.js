@@ -1,6 +1,8 @@
 const express = require('express');
 const app = express();
 const port = 3000;
+const server = require('http').Server(app);
+const io = require('socket.io')(server);
 
 const bodyParser = require('body-parser');
 // const MongoClient = require('mongodb').MongoClient;
@@ -24,6 +26,9 @@ models.connectDB()
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ type: 'application/json' }));
+
+// load static file
+app.use(express.static('public'));
 
 // load APIs
 userApis.load(app);
@@ -50,4 +55,39 @@ app.use(function (err, req, res, next) {
     });
 });
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+io.on('connection', function(socket) {
+    console.log('A user is connected.');
+    
+    socket.on('receiving-message', function(data, callback) {
+        try {
+            socket.broadcast.emit('send-message', data.message);
+            return callback(null, data);            
+        } catch (error) {
+            return callback(error);
+        }
+    });
+
+    socket.on('send-typing', function(data, callback) {
+        try {
+            socket.broadcast.emit('receive-typing');
+            return callback(null, data);
+        } catch (error) {
+            return callback(error);
+        }
+    });
+
+    socket.on('send-done-typing', function(data, callback) {
+        try {
+            socket.broadcast.emit('receive-done-typing');
+            return callback(null, data);
+        } catch (error) {
+            return callback(error);
+        }
+    });
+    
+    socket.on('disconnect', function() {
+        console.log('A user is disconnect.');
+    })
+});
+
+server.listen(port, () => console.log(`Example app listening on port ${port}!`));
