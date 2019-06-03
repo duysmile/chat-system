@@ -54,6 +54,7 @@
           });
         }
         clearTimeout(typingTimer);
+        clearTimeout(doneTypingTimer);
 
         typingTimer = setTimeout(function() {
           socket.emit('send-typing', null, function(err, callback) {
@@ -64,9 +65,6 @@
             console.log('send typing') ;
           });
         }, 800);
-      });
-      $('#m').on('keydown', function(event) {
-        clearTimeout(doneTypingTimer);
       });
       $('#m').on('keyup', function(event) {
         clearTimeout(doneTypingTimer);
