@@ -1,13 +1,7 @@
 const Constants = require('../common/constants');
 const ResponseSuccess = require('../helpers/response.helper');
-const Room = require('../models/room');
-const Message = require('../models/message');
 const { roomRepository, messageRepository } = require('../repositories');
 const _ = require('lodash');
-
-const conditionNotDeleted = { 
-    deletedAt: { $exists: false },
-};
 
 const create =  async function(req, res, next) {
     try {
@@ -119,7 +113,7 @@ const deleteById = async function(req, res, next) {
     }
 };
 
-const getByRoom = async (req, res, next) => {
+const getMessagesInRoom = async (req, res, next) => {
     try {
         const author = req.user.id;
         const room = req.params.id;
@@ -161,5 +155,5 @@ module.exports = {
     getById,
     update,
     deleteById,
-    getByRoom
+    getMessagesInRoom
 };

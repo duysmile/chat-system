@@ -1,8 +1,8 @@
 const express = require('express');
 const app = express();
-const port = 3000;
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
+const cors = require('cors');
 
 const bodyParser = require('body-parser');
 // const MongoClient = require('mongodb').MongoClient;
@@ -12,17 +12,35 @@ const productApis = require('./apis/product.api');
 const roomApis = require('./apis/room.api');
 const messageApis = require('./apis/message.api');
 const loginApis = require('./apis/login.api');
+const socketHandler = require('./socket-handler');
 
 // const url = 'mongodb://localhost:27017';
 // const dbName = 'node03';
 
 const models = require('./models');
+const port = 3001;
+
 models.connectDB()
     .then(console.log('DB connected!'))
     .catch(e => {
         console.error(e);
         return process.exit(1);
     });
+
+app.use(cors({
+    'allowedHeaders': ['sessionId', 'Content-Type', 'Authorization'],
+    'exposedHeaders': ['sessionId'],
+    'origin': '*',
+    'methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    'preflightContinue': true
+}));
+app.options('*', cors({
+    'allowedHeaders': ['sessionId', 'Content-Type', 'Authorization'],
+    'exposedHeaders': ['sessionId'],
+    'origin': '*',
+    'methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    'preflightContinue': true
+}));
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ type: 'application/json' }));
@@ -55,39 +73,6 @@ app.use(function (err, req, res, next) {
     });
 });
 
-io.on('connection', function(socket) {
-    console.log('A user is connected.');
-    
-    socket.on('receiving-message', function(data, callback) {
-        try {
-            socket.broadcast.emit('send-message', data.message);
-            return callback(null, data);            
-        } catch (error) {
-            return callback(error);
-        }
-    });
-
-    socket.on('send-typing', function(data, callback) {
-        try {
-            socket.broadcast.emit('receive-typing');
-            return callback(null, data);
-        } catch (error) {
-            return callback(error);
-        }
-    });
-
-    socket.on('send-done-typing', function(data, callback) {
-        try {
-            socket.broadcast.emit('receive-done-typing');
-            return callback(null, data);
-        } catch (error) {
-            return callback(error);
-        }
-    });
-    
-    socket.on('disconnect', function() {
-        console.log('A user is disconnect.');
-    })
-});
+socketHandler.load(io);
 
 server.listen(port, () => console.log(`Example app listening on port ${port}!`));

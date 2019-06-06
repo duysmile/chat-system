@@ -1,6 +1,7 @@
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
 const jwtHelper = require('../helpers/jwt.helper');
+const { ResponseSuccess, ResponseError } = require('../helpers/response.helper');
 
 exports.login = async (req, res, next) => {
     try {
@@ -8,22 +9,21 @@ exports.login = async (req, res, next) => {
 
         const user = await User.findOne({ username }).lean();
         if (!user) {
-            return next(new Error('Username is not existed!'));
+            return ResponseError('USERNAME_NOT_EXISTED', res);
         }
 
         const isValidPassword = bcrypt.compareSync(password, user.password);
         if (!isValidPassword) {
-            return next(new Error('Password is incorrect!'));
+            return ResponseError('INCORRECT_PASSWORD', res);
         }
         
         delete user.password;
 
         const token = jwtHelper.generateToken({ username, _id: user._id });
-        return res.status(200).json({
-            message: 'Login successfully',
+        return ResponseSuccess('LOGIN_SUCCESS', {
             data: user,
             access_token: token
-        });
+        }, res);
     } catch (error) {
         return next(error);
     }

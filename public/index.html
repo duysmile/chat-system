@@ -21,7 +21,15 @@
   </head>
   <body>
     <script type="text/javascript">
-      const socket = io('http://localhost:3000');
+      const socket = io('http://localhost:3000?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImR1eW4xIiwiX2lkIjoiNWNlZWMxMTMxZDRlNzgzM2RmOWQwY2JiIiwiaWF0IjoxNTU5NzM5NzM3LCJleHAiOjE1NTk4MjYxMzd9.NymuawwYcCfb8G8jR3Lz74HniIDCt1TRUYGSiESJjCj3znorro6AdH1etsDVaB-J5b2aagCtP_l4jpY07SRZHoo0E8pTtQD8Ep1nnC5iVedXPt7LxTe4OJI_pULJdoXd1xuo2GgialkRbDg1oyWUsRaG5R34AKDOe-7PQI2PZWI');
+
+      socket.on('error', function(err) {
+        console.error(err);
+      });
+
+      socket.on('messages', function(data) {
+
+      });
       socket.on('send-message', function(msg) {
         $('#messages').append('<li class="left"><div>' + msg + '</div></li>');
       });
@@ -45,7 +53,7 @@
       let typingTimer;
       $('#m').on('input', function(event) {
         if (!typingTimer) {
-          socket.emit('send-typing', null, function(err, callback) {
+          socket.emit('messages', { action: 'SEND_TYPING' }, function(err, callback) {
             if (err) {
               alert('Oops, something went wrong!');
               return;
@@ -57,7 +65,7 @@
         clearTimeout(doneTypingTimer);
 
         typingTimer = setTimeout(function() {
-          socket.emit('send-typing', null, function(err, callback) {
+          socket.emit('messages', { action: 'SEND_TYPING' }, function(err, callback) {
             if (err) {
               alert('Oops, something went wrong!');
               return;

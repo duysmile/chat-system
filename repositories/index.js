@@ -1,9 +1,10 @@
+const BaseRepository = require('./base.repository');
 const RoomRepository = require('./room.repository');
-const UserRepository = require('./user.repository');
-const MessageRepository = require('./message.repository');
+// const User = require('../models/user');
+const Message = require('../models/message');
 
 module.exports = {
+    userRepository: new BaseRepository('User'),
     roomRepository: new RoomRepository(),
-    userRepository: new UserRepository(),
-    messageRepository: new MessageRepository()
+    messageRepository: new BaseRepository('Message'),
 };
