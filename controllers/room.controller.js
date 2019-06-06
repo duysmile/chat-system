@@ -1,5 +1,5 @@
 const Constants = require('../common/constants');
-const ResponseSuccess = require('../helpers/response.helper');
+const { ResponseSuccess } = require('../helpers/response.helper');
 const { roomRepository, userRepository, messageRepository } = require('../repositories');
 
 const getAll = async function(req, res, next) {

@@ -1,5 +1,5 @@
 const Constants = require('../common/constants');
-const ResponseSuccess = require('../helpers/response.helper');
+const { ResponseSuccess } = require('../helpers/response.helper');
 const { roomRepository, messageRepository } = require('../repositories');
 const _ = require('lodash');
 

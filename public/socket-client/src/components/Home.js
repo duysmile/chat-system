@@ -18,6 +18,15 @@ export default class Home extends React.Component {
         this.changeInputPassword = this.changeInputPassword.bind(this);
     }
 
+    componentDidMount() {
+        const token = localStorage.getItem('access_token');
+        if (!!token) {
+            this.setState({
+                redirect: true
+            });
+        }
+    }
+
     async login(event) {
         try {
             event.preventDefault();
@@ -34,6 +43,7 @@ export default class Home extends React.Component {
             }
             const data = resultLogin.data.data;
             localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('username', data.data.username);
             console.log(username, password);
             return this.setState({
                 redirect: true
@@ -59,7 +69,7 @@ export default class Home extends React.Component {
         return (
             <div className="h-100 d-flex justify-content-center align-items-center">
                 {this.state.redirect && (<Redirect to='/room'/>)}
-                <form className="border p-5 w-25" onSubmit={this.login}>
+                <form className="border p-5 w-25" id="form-login" onSubmit={this.login}>
                     <div className="mb-3 d-flex justify-content-center">
                         <h3 className="text-white">
                             CHAT APP
@@ -94,7 +104,7 @@ export default class Home extends React.Component {
                         </label>
                     </div>
                     
-                    <div className="mb-2" style={{'min-height': '2em'}}>
+                    <div className="mb-2" style={{minHeight: '2em'}}>
                     {!!this.state.error && (
                         <small className="text-danger">{this.state.error}</small>
                     )}

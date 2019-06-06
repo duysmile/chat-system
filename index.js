@@ -27,20 +27,16 @@ models.connectDB()
         return process.exit(1);
     });
 
-app.use(cors({
+const headers = {
     'allowedHeaders': ['sessionId', 'Content-Type', 'Authorization'],
     'exposedHeaders': ['sessionId'],
     'origin': '*',
     'methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
     'preflightContinue': true
-}));
-app.options('*', cors({
-    'allowedHeaders': ['sessionId', 'Content-Type', 'Authorization'],
-    'exposedHeaders': ['sessionId'],
-    'origin': '*',
-    'methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    'preflightContinue': true
-}));
+};
+
+app.use(cors(headers));
+app.options('*', cors(headers));
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ type: 'application/json' }));

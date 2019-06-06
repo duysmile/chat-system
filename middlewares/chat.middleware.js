@@ -3,7 +3,10 @@ const User = require('../models/user');
 
 exports.getUserData = async (req, res, next) => {
     try {
-        const token = req.body.token || req.params.token || req.headers.token;
+        if (req.method === 'OPTIONS') {
+            return next();
+        }
+        const token = req.body.token || req.params.token || req.headers.authorization;
         if (!token) {
             return next(new Error('AUTHENTICATION_FAILED'));
         }

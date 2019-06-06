@@ -1,0 +1,19 @@
+body {
+  min-height: 100vh;
+  background: linear-gradient(rgba(169, 186, 238, 1), rgba(169, 186, 238, 1));
+  font-family: Roboto;
+}
+
+#root {
+  height: 100vh;
+}
+
+::placeholder {
+  color: white !important;
+  opacity: 1;
+}
+
+#form-login {
+  min-width: 125px;
+  background: linear-gradient(rgba(169, 186, 238, 0.5), rgba(169, 186, 238, 0.8));
+}

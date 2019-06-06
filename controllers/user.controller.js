@@ -1,6 +1,6 @@
 const Constants = require('../common/constants'); 
 const { ObjectId } = require('mongodb');
-const ResponseSuccess = require('../helpers/response.helper');
+const { ResponseSuccess } = require('../helpers/response.helper');
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
 const _ = require('lodash');

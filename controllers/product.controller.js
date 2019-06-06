@@ -1,5 +1,5 @@
 const Constants = require('../common/constants');
-const ResponseSuccess = require('../helpers/response.helper');
+const { ResponseSuccess } = require('../helpers/response.helper');
 const { ObjectId } = require('mongodb');
 const Product = require('../models/product');
 const User = require('../models/user');
