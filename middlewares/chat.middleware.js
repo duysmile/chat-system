@@ -22,9 +22,7 @@ exports.getUserData = async (req, res, next) => {
         if (!!user.deletedAt) {
             return next(new Error('USER_IS_IN_ACTIVE'));
         }
-        req.user = {
-            id: dataVerified._id
-        };
+        req.user = dataVerified;
         return next();
     } catch (error) {
         return next(error);

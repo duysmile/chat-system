@@ -21,27 +21,42 @@
   </head>
   <body>
     <script type="text/javascript">
-      const socket = io('http://localhost:3000?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImR1eW4xIiwiX2lkIjoiNWNlZWMxMTMxZDRlNzgzM2RmOWQwY2JiIiwiaWF0IjoxNTU5NzM5NzM3LCJleHAiOjE1NTk4MjYxMzd9.NymuawwYcCfb8G8jR3Lz74HniIDCt1TRUYGSiESJjCj3znorro6AdH1etsDVaB-J5b2aagCtP_l4jpY07SRZHoo0E8pTtQD8Ep1nnC5iVedXPt7LxTe4OJI_pULJdoXd1xuo2GgialkRbDg1oyWUsRaG5R34AKDOe-7PQI2PZWI');
+      const socket = io('http://localhost:3001?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImR1eW4xIiwiX2lkIjoiNWNlZWMxMTMxZDRlNzgzM2RmOWQwY2JiIiwiaWF0IjoxNTU5OTE3ODg3LCJleHAiOjE1NjAwMDQyODd9.nt7FyQydubRNuR2bLK_ROHE2BvlctMCVMR63CeInpkMI7Mk1kh-OZtdnrooe4Wz3lgpe1Ljagvv4uhlnlc38BdabwZpnlJFunAPRDREzBnzbzcEQg6hzqGoQ-vc8GveWS4l0DZlVKiRuzlidIXmFXjoPTX1HSYv1yZ0k31dDiOg');
 
       socket.on('error', function(err) {
         console.error(err);
       });
 
       socket.on('messages', function(data) {
-
+        switch(data.action) {
+          case 'RECEIVE':
+            $('#messages').append('<li class="left"><div>' + data.message.content + '</div></li>');
+            return;
+          case 'RECEIVE_TYPING':
+            console.log('typing');
+            $('#typing').remove();
+            $('#messages').append('<li id="typing" class="left"><div>' + '...' + '</div></li>');
+            return;
+          case 'RECEIVE_DONE_TYPING':
+            console.log('done-typing');
+            $('#typing').remove();
+            return;
+          default:
+            return;
+        }
       });
-      socket.on('send-message', function(msg) {
-        $('#messages').append('<li class="left"><div>' + msg + '</div></li>');
-      });
-      socket.on('receive-typing', function() {
-        console.log('typing');
-        $('#typing').remove();
-        $('#messages').append('<li id="typing" class="left"><div>' + '...' + '</div></li>');
-      });
-      socket.on('receive-done-typing', function() {
-        console.log('done-typing');
-        $('#typing').remove();
-      });
+      // socket.on('send-message', function(msg) {
+      //   $('#messages').append('<li class="left"><div>' + msg + '</div></li>');
+      // });
+      // socket.on('receive-typing', function() {
+      //   console.log('typing');
+      //   $('#typing').remove();
+      //   $('#messages').append('<li id="typing" class="left"><div>' + '...' + '</div></li>');
+      // });
+      // socket.on('receive-done-typing', function() {
+      //   console.log('done-typing');
+      //   $('#typing').remove();
+      // });
     </script>
     <ul id="messages"></ul>
     <form class="form">
@@ -77,7 +92,7 @@
       $('#m').on('keyup', function(event) {
         clearTimeout(doneTypingTimer);
         doneTypingTimer = setTimeout(function() {
-          socket.emit('send-done-typing', null, function(err, callback) {
+          socket.emit('messages', { action: 'SEND_DONE_TYPING' }, function(err, callback) {
             if (err) {
               alert('Oops, something went wrong!');
               return;
@@ -93,17 +108,18 @@
         if (msg === '') {
           return;
         }
-        socket.emit('receiving-message', {
+        socket.emit('messages', {
+          action: 'SEND',
           message: msg
         }, function(error, returningData) {
           if (error) {
             alert('Oops, something when wrong!');
             return;
           }
-          $('#messages').append('<li class="right"><div>' + returningData.message + '</div></li>');
+          $('#messages').append('<li class="right"><div>' + returningData.content + '</div></li>');
           clearTimeout(typingTimer);
           clearTimeout(doneTypingTimer);
-          socket.emit('send-done-typing', null, function(err, callback) {
+          socket.emit('messages', {action: 'SEND_DONE_TYPING'}, function(err, callback) {
             if (err) {
               alert('Oops, something went wrong!');
               return;

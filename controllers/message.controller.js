@@ -3,17 +3,17 @@ const { ResponseSuccess } = require('../helpers/response.helper');
 const { roomRepository, messageRepository } = require('../repositories');
 const _ = require('lodash');
 
-const create =  async function(req, res, next) {
+const create =  async function(req, res, next = function(err) {
+    return Promise.reject(err);
+}) {
     try {
-        const author = req.user.id;
+        const author = req.user._id;
         const data = req.body;
-        // pick/omit cuar lodash
-
-        console.log(room, author)
+        // pick/omit cua lodash
         
         const existedRoom = await roomRepository.getOne({
             where: {
-                _id: room,
+                _id: data.room,
                 members: author
             }
         });
@@ -24,11 +24,9 @@ const create =  async function(req, res, next) {
         data.author = author;
         const message = await messageRepository.create(data);
 
-        console.log(message);
-
         await roomRepository.updateOne({
             where: { 
-                _id: room 
+                _id: data.room 
             }, 
             data: {
                 lastMessage: message._id
@@ -40,7 +38,9 @@ const create =  async function(req, res, next) {
     }
 };
 
-const getById = async function(req, res, next) {
+const getById = async function(req, res, next = function(err) {
+    return Promise.reject(err);
+}) {
     try {
         const { id } = req.params;
         const author = req.user.id;
@@ -66,7 +66,9 @@ const getById = async function(req, res, next) {
     }
 };
 
-const update = async function(req, res, next) {
+const update = async function(req, res, next = function(err) {
+    return Promise.reject(err);
+}) {
     try {
         const { id } = req.params;
         const author = req.user.id;
@@ -94,7 +96,9 @@ const update = async function(req, res, next) {
     }
 };
 
-const deleteById = async function(req, res, next) {
+const deleteById = async function(req, res, next = function(err) {
+    return Promise.reject(err);
+}) {
     try {
         const { id } = req.params;
         const author = req.user.id;
@@ -113,7 +117,9 @@ const deleteById = async function(req, res, next) {
     }
 };
 
-const getMessagesInRoom = async (req, res, next) => {
+const getMessagesInRoom = async (req, res, next = function(err) {
+    return Promise.reject(err);
+}) => {
     try {
         const author = req.user.id;
         const room = req.params.id;

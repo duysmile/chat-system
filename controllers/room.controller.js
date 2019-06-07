@@ -2,9 +2,11 @@ const Constants = require('../common/constants');
 const { ResponseSuccess } = require('../helpers/response.helper');
 const { roomRepository, userRepository, messageRepository } = require('../repositories');
 
-const getAll = async function(req, res, next) {
+const getAll = async function(req, res, next = function(err) {
+    return Promise.reject(err);
+}) {
     try {
-        const author = req.user.id;
+        const author = req.user._id;
         let { page, limit } = req.query;
         
         const rooms = await roomRepository.getAll({
@@ -24,7 +26,7 @@ const getAll = async function(req, res, next) {
                 },
                 {
                     path: 'lastMessage',
-                    select: 'author content',
+                    select: 'author content createdAt',
                     populate: {
                         path: 'author',
                         select: 'username'
@@ -39,7 +41,9 @@ const getAll = async function(req, res, next) {
     }
 };
 
-const create =  async function(req, res, next) {
+const create =  async function(req, res, next = function(err) {
+    return Promise.reject(err);
+}) {
     try {
 
         const author = req.user.id;
@@ -81,7 +85,9 @@ const create =  async function(req, res, next) {
     }
 };
 
-const getById = async function(req, res, next) {
+const getById = async function(req, res, next = function(err) {
+    return Promise.reject(err);
+}) {
     try {
         const { id } = req.params;
         const author = req.user.id;
@@ -121,7 +127,9 @@ const getById = async function(req, res, next) {
     }
 };
 
-const deleteById = async function(req, res, next) {
+const deleteById = async function(req, res, next = function(err) {
+    return Promise.reject(err);
+}) {
     try {
         const author = req.user.id;        
         const { id } = req.params;
@@ -144,7 +152,9 @@ const deleteById = async function(req, res, next) {
     }
 };
 
-const inviteMembersToGroup = async (req, res, next) => {
+const inviteMembersToGroup = async (req, res, next = function(err) {
+    return Promise.reject(err);
+}) => {
     try {
         const { id } = req.params;
         const {
@@ -167,7 +177,7 @@ const inviteMembersToGroup = async (req, res, next) => {
             return next(new Error('NOT_EXISTED_ROOM'));
         }
 
-        return ResponseSuccess('Invite members to room successfully!', room, res);
+        return ResponseSuccess('INVITE_MEMBER_SUCCESS', room, res);
     } catch (error) {
         return next(error);
     }

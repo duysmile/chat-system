@@ -1,6 +1,7 @@
 import React from 'react';
 import { Redirect } from 'react-router-dom';
 import RequestHelper from '../helpers/request-helper';
+import moment from 'moment';
 import '../css/Room.css';
 
 import images from '../images/user.png';
@@ -25,10 +26,17 @@ export default class Room extends React.Component {
             //         redirectToLogin: true
             //     });
             // }   
-            const rooms = await RequestHelper.get('/api/v1/rooms');
-            this.setState({
-                rooms
-            });
+            const dataRooms = await RequestHelper.get('/api/v1/rooms');
+            if (dataRooms.success) {
+                this.setState({
+                    rooms: dataRooms.data.data
+                });
+            } else {
+                // localStorage.clear();
+                // this.setState({
+                //     redirectToLogin: true
+                // })    
+            }
         } catch (error) {
             // localStorage.clear();
             // this.setState({
@@ -69,45 +77,29 @@ export default class Room extends React.Component {
                 <div className="wrapper border-top">
                     <div className="group-list">
                         <div className="header">
-                            <img src={images} />
+                            <img src={images} alt="user-avatar"/>
                             <h3>{localStorage.getItem('username')}</h3>
                         </div>
                         <div className="search">
                             <input type="text" id="search" placeholder="Tìm kiếm tin nhắn" />
                         </div>
                         <div className="list">
-                            <div className="group">
-                                <img src={images} />
-                                <div className="info">
-                                    <p>Ngọc Sơn</p>
-                                    <span>Hello</span>
-                                    <span className="time">10:45</span>
-                                </div>
-                            </div>
-
-                            <div className="group">
-                                <img src={images} />
-                                <div className="info">
-                                    <p>Ngọc Sơn</p>
-                                    <span>Hello</span>
-                                    <span className="time">10:45</span>
-                                </div>
-                            </div>
-
-                            <div className="group">
-                                <img src={images} />
-                                <div className="info">
-                                    <p>Ngọc Sơn</p>
-                                    <span>Hello</span>
-                                    <span className="time">10:45</span>
-                                </div>
-                            </div>
+                            {this.state.rooms.map((room, index) => (
+                                <div className="group" key={index}>
+                                    <img src={images} alt="user-avatar"/>
+                                    <div className="info">
+                                        <p>{room.name}</p>
+                                        <span>{room.lastMessage.content}</span>
+                                        <span className="time">{moment(room.lastMessage.createdAt).format('HH:mm')}</span>
+                                    </div>
+                                </div>    
+                            ))}
                         </div>
                     </div>
                     <div className="chat-box">
                         <div className="header">
                             <div className="info">
-                                <img src={images} />
+                                <img src={images} alt="user-avatar"/>
                                 <p>Ngọc Sơn</p>
                             </div>
                         </div>

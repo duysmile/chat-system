@@ -44,7 +44,6 @@ module.exports = class BaseRepository {
             deletedAt: null
         }, newOptions.where);
 
-        console.log(newOptions)
         return this.model.findOne(newOptions.where)
             .sort(newOptions.sort)
             .populate(newOptions.populate)
