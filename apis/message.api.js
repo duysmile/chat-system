@@ -9,5 +9,4 @@ exports.load = (app) => {
     app.delete('/api/v1/messages/:id', validate(messageValidation.paramId()), messageController.deleteById);
     app.post('/api/v1/messages', validate(messageValidation.createMessage()), messageController.create);
     app.put('/api/v1/messages/:id', validate(messageValidation.update()), messageController.update);
-    app.get('/api/v1/rooms/:id/messages', validate(messageValidation.getMessages()), messageController.getMessagesInRoom);
 };

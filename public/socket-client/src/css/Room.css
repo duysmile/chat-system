@@ -81,6 +81,16 @@
     margin-left: 5px;
 }
 
+.group-list .list .group .info span.text-content {
+    width: 8em;
+    display: inline-block;
+}
+
+.group-list .list .group .info a {
+    text-decoration: none;
+    color: #212529;        
+}
+
 .chat-box {
     flex-grow: 1;
     position: relative;
@@ -126,6 +136,8 @@
     max-width: 500px;
     margin: 0;
     margin-bottom: 5px;
+    max-width: 30em;
+    word-wrap: break-word;
 }
 
 .chat-box .list .message span {

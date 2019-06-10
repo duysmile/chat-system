@@ -31,21 +31,8 @@ const update = function() {
     } 
 };
 
-const getMessages = function() {
-    return {
-        query: Joi.object().keys({
-            page: Joi.number().default(1),
-            limit: Joi.number().max(100).default(10)
-        }),
-        params: {
-            id: Joi.string().regex(Constants.REGEX.OBJECT_ID)
-        }
-    }
-};
-
 module.exports = {
     createMessage,
     paramId,
-    update,
-    getMessages
+    update
 };

@@ -28,11 +28,10 @@ models.connectDB()
     });
 
 const headers = {
-    'allowedHeaders': ['sessionId', 'Content-Type', 'Authorization'],
-    'exposedHeaders': ['sessionId'],
+    // 'allowedHeaders': ['Content-Type', 'Authorization'],
     'origin': '*',
-    'methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    'preflightContinue': true
+    // 'methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    // 'preflightContinue': true
 };
 
 app.use(cors(headers));

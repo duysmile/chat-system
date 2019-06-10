@@ -6,19 +6,26 @@ const userSchema = new mongoose.Schema({
         min: 3,
         max: 100,
         unique: true,
-        required: true
+        // required: true
     },
     password: {
         type: String,
         min: 5,
         max: 300,
-        required: true
+        // required: true
     },
     email: {
         type: String,
         max: 300,
         required: true,
         unique: true
+    },
+    facebook: {
+        userId: {
+            type: String,
+            max: 100,
+            unique: true
+        }
     },
     token: {
         type: String,
@@ -27,7 +34,7 @@ const userSchema = new mongoose.Schema({
     gender: {
         type: String,
         enum: ['Male', 'Female', 'Other'],
-        required: true
+        // required: true
     },
     geoPosition: {
         type: [Number]

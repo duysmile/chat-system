@@ -43,7 +43,7 @@ const getById = async function(req, res, next = function(err) {
 }) {
     try {
         const { id } = req.params;
-        const author = req.user.id;
+        const author = req.user._id;
         const message = await messageRepository.getOne({
             where: {
                 _id: id,
@@ -71,7 +71,7 @@ const update = async function(req, res, next = function(err) {
 }) {
     try {
         const { id } = req.params;
-        const author = req.user.id;
+        const author = req.user._id;
         const {
             content,
         } = req.body;
@@ -101,7 +101,7 @@ const deleteById = async function(req, res, next = function(err) {
 }) {
     try {
         const { id } = req.params;
-        const author = req.user.id;
+        const author = req.user._id;
         const message = await messageRepository.deleteOne({ 
             _id: id,
             author: author
@@ -117,49 +117,9 @@ const deleteById = async function(req, res, next = function(err) {
     }
 };
 
-const getMessagesInRoom = async (req, res, next = function(err) {
-    return Promise.reject(err);
-}) => {
-    try {
-        const author = req.user.id;
-        const room = req.params.id;
-        const existedRoom = await roomRepository.getOne({
-            where: { 
-                _id: room,
-                members: author
-            },
-            fields: '_id'
-        });
-        if (!existedRoom) {
-            return next(new Error('NOT_EXISTED_ROOM'));
-        }
-
-        let { page, limit } = req.query;
-        
-        const messages = await messageRepository.getAll({
-            where: { 
-                room
-            },
-            page: page,
-            limit: limit,
-            fields: 'createdAt content author',
-            populate: {
-                path: 'author',
-                select: 'username'
-            },
-            sort: '-createdAt'
-        });
-
-        return ResponseSuccess('GET_MESSAGES_SUCCESS', messages, res);
-    } catch (error) {
-        return next(error);
-    }
-};
-
 module.exports = {
     create,
     getById,
     update,
-    deleteById,
-    getMessagesInRoom
+    deleteById
 };

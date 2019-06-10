@@ -46,7 +46,7 @@ const create =  async function(req, res, next = function(err) {
 }) {
     try {
 
-        const author = req.user.id;
+        const author = req.user._id;
         const {
             name,
             members,
@@ -85,43 +85,42 @@ const create =  async function(req, res, next = function(err) {
     }
 };
 
-const getById = async function(req, res, next = function(err) {
+const getById = async (req, res, next = function(err) {
     return Promise.reject(err);
-}) {
+}) => {
     try {
-        const { id } = req.params;
-        const author = req.user.id;
-
-        const room = await roomRepository.getOne({
-            where: {
-                _id: id,
+        const author = req.user._id;
+        const room = req.params.id;
+        const existedRoom = await roomRepository.getOne({
+            where: { 
+                _id: room,
                 members: author
             },
-            populate: [
-                {
-                    path: 'author',
-                    select: 'username'
-                },
-                {
-                    path: 'members',
-                    select: 'username'
-                },
-                {
-                    path: 'lastMessage',
-                    select: 'author content',
-                    populate: {
-                        path: 'author',
-                        select: 'username'
-                    }
-                }
-            ]
+            fields: '_id name'
         });
-
-        if (!room) {
+        if (!existedRoom) {
             return next(new Error('NOT_EXISTED_ROOM'));
         }
 
-        return ResponseSuccess('GET_ROOM_SUCCESS', room, res);
+        let { page, limit } = req.query;
+        
+        const messages = await messageRepository.getAll({
+            where: { 
+                room
+            },
+            page: page,
+            limit: limit,
+            fields: 'createdAt content author',
+            populate: {
+                path: 'author',
+                select: 'username'
+            },
+            sort: '-createdAt'
+        });
+
+        existedRoom.messages = messages;
+
+        return ResponseSuccess('GET_ROOM_SUCCESS', existedRoom, res);
     } catch (error) {
         return next(error);
     }
@@ -131,7 +130,7 @@ const deleteById = async function(req, res, next = function(err) {
     return Promise.reject(err);
 }) {
     try {
-        const author = req.user.id;        
+        const author = req.user._id;        
         const { id } = req.params;
         const room = await roomRepository.deleteOne({ 
             _id: id,
@@ -160,7 +159,7 @@ const inviteMembersToGroup = async (req, res, next = function(err) {
         const {
             members,
         } = req.body;
-        const author = req.user.id;
+        const author = req.user._id;
 
         const listMember = Array.from(new Set(members));
         const countExistedUsers = await userRepository.count({ 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Redirect } from 'react-router-dom';
+import { Redirect, Link } from 'react-router-dom';
 import RequestHelper from '../helpers/request-helper';
 import moment from 'moment';
 import '../css/Room.css';
@@ -12,32 +12,50 @@ export default class Room extends React.Component {
         this.state = {
             redirectToLogin: false,
             rooms: [],
+            room: {
+                messages: []
+            },
+            roomId: '',
+            author: localStorage.getItem('userId')
         };
         this.createRoom = this.createRoom.bind(this);
         this.logout = this.logout.bind(this);
     }
 
+    componentWillReceiveProps(nextProps) {
+        if (nextProps.match.params.id !== this.state.roomId) {
+            const roomId = nextProps.match.params.id;
+            console.log('here', roomId);  
+            this.setState({
+                roomId
+            });
+        }
+        return true;
+    }
+
     async componentDidMount() {
         try {
-            console.log('here');
             // const token = localStorage.getItem('access_token');
             // if (!token) {
             //     this.setState({
             //         redirectToLogin: true
             //     });
-            // }   
-            const dataRooms = await RequestHelper.get('/api/v1/rooms');
-            if (dataRooms.success) {
+            // }
+            const roomId = this.state.roomId;
+            if (roomId) {
+                const dataRoom = await RequestHelper.get(`/api/v1/rooms/${roomId}`);
                 this.setState({
-                    rooms: dataRooms.data.data
+                    room: dataRoom.data
                 });
-            } else {
-                // localStorage.clear();
-                // this.setState({
-                //     redirectToLogin: true
-                // })    
+                console.log(dataRoom.data.data.messages)
             }
+
+            const dataRooms = await RequestHelper.get('/api/v1/rooms');
+            this.setState({
+                rooms: dataRooms.data
+            });
         } catch (error) {
+            console.log(error.response.data);
             // localStorage.clear();
             // this.setState({
             //     redirectToLogin: true
@@ -56,7 +74,18 @@ export default class Room extends React.Component {
         });
     }
 
+    formatTime(time) {
+        const formatTime = moment(time);
+        const now = moment();
+        if (now.isSame(formatTime, 'day')) {
+            return formatTime.format('HH:mm');
+        }
+        return formatTime.format('DD [Tháng] MM');
+    }
+
     render() {
+        let messages = this.state.room ? [...this.state.room.messages] : [];
+        messages = messages.reverse();
         return (
             <div className="d-flex flex-column h-100">
                 {this.state.redirectToLogin && (
@@ -88,9 +117,13 @@ export default class Room extends React.Component {
                                 <div className="group" key={index}>
                                     <img src={images} alt="user-avatar"/>
                                     <div className="info">
-                                        <p>{room.name}</p>
-                                        <span>{room.lastMessage.content}</span>
-                                        <span className="time">{moment(room.lastMessage.createdAt).format('HH:mm')}</span>
+                                        <Link to={`/rooms/${room._id}`}>
+                                            <p>{room.name}</p>
+                                            <div className="d-flex">
+                                                <span className="text-content text-truncate">{room.lastMessage.content}</span>
+                                                <span className="time">{this.formatTime(room.lastMessage.createdAt)}</span>
+                                            </div>
+                                        </Link>
                                     </div>
                                 </div>    
                             ))}
@@ -100,18 +133,16 @@ export default class Room extends React.Component {
                         <div className="header">
                             <div className="info">
                                 <img src={images} alt="user-avatar"/>
-                                <p>Ngọc Sơn</p>
+                                <p>{this.state.room.name}</p>
                             </div>
                         </div>
                         <div className="list">
-                            <div className="message">
-                                <p>This is a generator for text fonts of the "cool" variety. I noticed people were trying to find a generator like fancy letters, but were ending up on actual font sites</p>
-                                <span>15:10</span>
-                            </div>
-                            <div className="message me">
-                                <p>This is a generator for text fonts of the "cool" variety.</p>
-                                <span>15:15</span>
-                            </div>
+                            {messages.map((message, index) => (
+                                <div key={index} className={"message " + (message.author._id === this.state.author ? "me" : "")}>
+                                    <p>{message.content}</p>
+                                    <span>{this.formatTime(message.createdAt)}</span>
+                                </div>
+                            ))}
                         </div>
                         <div className="box">
                             <input type="text" placeholder="Nhập tin nhắn" />

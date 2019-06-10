@@ -36,20 +36,15 @@ export default class Home extends React.Component {
                 username,
                 password
             });
-            if (!resultLogin.success) {
-                return this.setState({
-                    error: resultLogin.message
-                });
-            }
-            const data = resultLogin.data.data;
+            const data = resultLogin.data;
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('username', data.data.username);
-            console.log(username, password);
+            localStorage.setItem('userId', data.data._id);
             return this.setState({
                 redirect: true
             })
         } catch (err) {
-            console.log(err);
+            console.log(err.response.data);
         }
     }
 
@@ -68,7 +63,7 @@ export default class Home extends React.Component {
     render() {
         return (
             <div className="h-100 d-flex justify-content-center align-items-center">
-                {this.state.redirect && (<Redirect to='/room'/>)}
+                {this.state.redirect && (<Redirect to='/rooms'/>)}
                 <form className="border p-5 w-25" id="form-login" onSubmit={this.login}>
                     <div className="mb-3 d-flex justify-content-center">
                         <h3 className="text-white">
