@@ -15,22 +15,39 @@ export default class Room extends React.Component {
             room: {
                 messages: []
             },
-            roomId: '',
+            roomId: props.match.params.id,
             author: localStorage.getItem('userId')
         };
         this.createRoom = this.createRoom.bind(this);
         this.logout = this.logout.bind(this);
+        this.loadDataRoom = this.loadDataRoom.bind(this);
     }
 
-    componentWillReceiveProps(nextProps) {
-        if (nextProps.match.params.id !== this.state.roomId) {
-            const roomId = nextProps.match.params.id;
-            console.log('here', roomId);  
+    // componentWillReceiveProps(nextProps) {
+    //     if (nextProps.match.params.id !== this.state.roomId) {
+    //         const roomId = nextProps.match.params.id;
+    //         console.log('here', roomId);  
+    //         this.setState({
+    //             roomId
+    //         });
+    //     }
+    //     return true;
+    // }
+    async componentDidUpdate(prevProps) {
+        if (this.props.match.params.id !== prevProps.match.params.id) {
+            const roomId = this.props.match.params.id;
+            await this.loadDataRoom(roomId);
+        }
+    }
+
+    async loadDataRoom(roomId) {
+        if (roomId) {
+            const dataRoom = await RequestHelper.get(`/api/v1/rooms/${roomId}`);
+            console.log(roomId, dataRoom);
             this.setState({
-                roomId
+                room: dataRoom.data
             });
         }
-        return true;
     }
 
     async componentDidMount() {
@@ -41,21 +58,15 @@ export default class Room extends React.Component {
             //         redirectToLogin: true
             //     });
             // }
-            const roomId = this.state.roomId;
-            if (roomId) {
-                const dataRoom = await RequestHelper.get(`/api/v1/rooms/${roomId}`);
-                this.setState({
-                    room: dataRoom.data
-                });
-                console.log(dataRoom.data.data.messages)
-            }
+            const roomId = this.props.match.params.id;
+            await this.loadDataRoom(roomId);
 
             const dataRooms = await RequestHelper.get('/api/v1/rooms');
             this.setState({
                 rooms: dataRooms.data
             });
         } catch (error) {
-            console.log(error.response.data);
+            console.log(error);
             // localStorage.clear();
             // this.setState({
             //     redirectToLogin: true
@@ -84,7 +95,7 @@ export default class Room extends React.Component {
     }
 
     render() {
-        let messages = this.state.room ? [...this.state.room.messages] : [];
+        let messages = this.state.room && Array.isArray(this.state.room.messages) ? [...this.state.room.messages] : [];
         messages = messages.reverse();
         return (
             <div className="d-flex flex-column h-100">
@@ -119,10 +130,17 @@ export default class Room extends React.Component {
                                     <div className="info">
                                         <Link to={`/rooms/${room._id}`}>
                                             <p>{room.name}</p>
-                                            <div className="d-flex">
-                                                <span className="text-content text-truncate">{room.lastMessage.content}</span>
-                                                <span className="time">{this.formatTime(room.lastMessage.createdAt)}</span>
-                                            </div>
+                                            {room.lastMessage ? (
+                                                <div className="d-flex">
+                                                    <span className="text-content text-truncate">{room.lastMessage.content}</span>
+                                                    <span className="time">{this.formatTime(room.lastMessage.createdAt)}</span>
+                                                </div>
+                                            ) : (
+                                                <div className="d-flex">
+                                                    <span className="text-content text-truncate"></span>
+                                                    <span className="time"></span>
+                                                </div>
+                                            )}
                                         </Link>
                                     </div>
                                 </div>    

@@ -45,6 +45,9 @@ export default class Home extends React.Component {
             })
         } catch (err) {
             console.log(err.response.data);
+            this.setState({
+                error: err.response.data.message
+            });
         }
     }
 

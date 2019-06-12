@@ -23,8 +23,7 @@ const userSchema = new mongoose.Schema({
     facebook: {
         userId: {
             type: String,
-            max: 100,
-            unique: true
+            max: 100
         }
     },
     token: {
