@@ -7,13 +7,25 @@ const getAll = async function(req, res, next = function(err) {
 }) {
     try {
         const author = req.user._id;
-        let { page, limit } = req.query;
+        let { lastRoomId, limit } = req.query;
+        let condition = {
+            members: author,
+        };
+        if (!!lastRoomId) {
+            condition = {
+                ...condition,
+                _id: {
+                    $lt: lastRoomId
+                }
+            }
+        }
         
         const rooms = await roomRepository.getAll({
-            page,
             limit,
-            where: {
-                members: author
+            where: condition,
+            sort: {
+                updatedAt: -1,
+                _id: -1
             },
             populate: [
                 {
@@ -102,20 +114,28 @@ const getById = async (req, res, next = function(err) {
             return next(new Error('NOT_EXISTED_ROOM'));
         }
 
-        let { page, limit } = req.query;
+        let { lastMessageId, limit } = req.query;
+        let condition = {
+            room
+        };
+        if (!!lastMessageId) {
+            condition = {
+                ...condition,
+                _id: {
+                    $lt: lastRoomId
+                }
+            }
+        }
         
         const messages = await messageRepository.getAll({
-            where: { 
-                room
-            },
-            page: page,
+            where: condition,
             limit: limit,
             fields: 'createdAt content author',
             populate: {
                 path: 'author',
                 select: 'username'
             },
-            sort: '-createdAt'
+            sort: '-_id'
         });
 
         existedRoom.messages = messages;

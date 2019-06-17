@@ -42,10 +42,7 @@ exports.loginByFB = async (req, res, next) => {
         
         const existedUser = await userRepository.getOneAndUpdate({
             where: {
-                $or: [
-                    { email },
-                    { 'facebook.userId': id }
-                ]
+                'facebook.userId': id
             },
             data: {
                 email,
@@ -59,6 +56,7 @@ exports.loginByFB = async (req, res, next) => {
                 new: true
             }
         });
+        
         const token = jwtHelper.generateToken({ 
             username: name, 
             _id: existedUser._id 
