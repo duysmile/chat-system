@@ -32,7 +32,12 @@ const create =  async function(req, res, next = function(err) {
                 lastMessage: message._id
             }
         });
-        return ResponseSuccess('CREATE_MESSAGE_SUCCESS', message, res);
+        return ResponseSuccess('CREATE_MESSAGE_SUCCESS', {
+            content: message.content,
+            author: message.author,
+            createdAt: message.createdAt,
+            room: message.room
+        }, res);
     } catch (error) {
         return next(error);
     }

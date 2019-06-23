@@ -7,25 +7,18 @@ const getAll = async function(req, res, next = function(err) {
 }) {
     try {
         const author = req.user._id;
-        let { lastRoomId, limit } = req.query;
+        let { page, limit } = req.query;
         let condition = {
             members: author,
         };
-        if (!!lastRoomId) {
-            condition = {
-                ...condition,
-                _id: {
-                    $lt: lastRoomId
-                }
-            }
-        }
         
         const rooms = await roomRepository.getAll({
             limit,
+            page,
             where: condition,
             sort: {
                 updatedAt: -1,
-                _id: -1
+                _id: 1
             },
             populate: [
                 {
@@ -108,13 +101,13 @@ const getById = async (req, res, next = function(err) {
                 _id: room,
                 members: author
             },
-            fields: '_id name'
+            fields: '_id name members'
         });
         if (!existedRoom) {
             return next(new Error('NOT_EXISTED_ROOM'));
         }
 
-        let { lastMessageId, limit } = req.query;
+        let { lastMessageId, limit } = req.query || {};
         let condition = {
             room
         };
@@ -122,7 +115,7 @@ const getById = async (req, res, next = function(err) {
             condition = {
                 ...condition,
                 _id: {
-                    $lt: lastRoomId
+                    $lt: lastMessageId
                 }
             }
         }

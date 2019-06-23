@@ -1,4 +1,5 @@
 const messageController = require('../controllers/message.controller');
+const roomController = require('../controllers/room.controller');
 
 exports.initEvent = (socket) => {
     socket.on('messages', async function(data, callback) {
@@ -14,11 +15,17 @@ exports.initEvent = (socket) => {
 
                 // }
                 case 'SEND_TYPING': {
-                    socket.broadcast.emit('messages', {action: 'RECEIVE_TYPING'});
+                    socket.broadcast.emit('messages', {
+                        action: 'RECEIVE_TYPING',
+                        roomId: data.roomId
+                    });
                     return callback(null, data);
                 }
                 case 'SEND_DONE_TYPING': {
-                    socket.broadcast.emit('messages', {action: 'RECEIVE_DONE_TYPING'});
+                    socket.broadcast.emit('messages', {
+                        action: 'RECEIVE_DONE_TYPING',
+                        roomId: data.roomId
+                    });
                     return callback(null, data);
                 }
             }          
@@ -30,18 +37,29 @@ exports.initEvent = (socket) => {
 
 const createMessage = async (socket, data, callback) => {
     // hard code room
-    const room = '5ceeb6a89793871f281ab291';
-    const responseData = await messageController.create({
+    const room = data.room;
+    const messageRequest = messageController.create({
         body: {
-            // room: data.room,
             room,
             content: data.message
         },
         user: socket.user
     });
-    socket.broadcast.emit('messages', {
-        action: 'RECEIVE',
-        message: responseData.data
+
+    const roomRequest = roomController.getById({
+        params: {
+            id: room
+        },
+        user: socket.user
     });
-    return callback(null, responseData.data);
+
+    const [messageResponseData, roomResponseData] = await Promise.all([messageRequest, roomRequest]);
+    
+    roomResponseData.data.members.map(member => {
+        socket.to(member.toString()).broadcast.emit('messages', {
+            action: 'RECEIVE',
+            message: messageResponseData.data
+        });
+    });
+    return callback(null, messageResponseData.data);
 }
