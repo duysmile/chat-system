@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema({
     geoPosition: {
         type: [Number]
     },
+    isOnline: {
+        type: Boolean,
+        default: false
+    },
     deletedAt: {
         type: Date
     }

@@ -36,7 +36,6 @@ exports.initEvent = (socket) => {
 };
 
 const createMessage = async (socket, data, callback) => {
-    // hard code room
     const room = data.room;
     const messageRequest = messageController.create({
         body: {

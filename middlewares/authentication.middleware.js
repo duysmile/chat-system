@@ -1,7 +1,7 @@
 const jwtHelper = require('../helpers/jwt.helper');
 
 exports.verifyToken = (req, res, next) => {
-    const token = req.body.token || req.params.token || req.headers.token;
+    const token = req.body.token || req.params.token || req.headers.authorization;
     if (!token) {
         return next(new Error('AUTHENTICATION_FAILED'));
     }

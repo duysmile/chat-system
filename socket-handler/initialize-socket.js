@@ -1,30 +1,53 @@
 const message = require('./message');
 const room = require('./room');
+const { userRepository } = require('../repositories');
 
 exports.initialize = (io) => {
-    io.on('connection', function(socket) {
-        console.log('A user is connected.');
-        const userId = socket.user._id;
-        socket.join(userId);
-        const countMultiDevicesOnline = numClientsInRoom(io, '/', userId);
-        if (countMultiDevicesOnline === 1) {
-            // TODO: update online status -> true
-        }
-        console.log(countMultiDevicesOnline);
-        // ----------------------
-        // ------INIT EVENT------
-        // ----------------------
-        message.initEvent(socket);
-        room.initEvent(socket);
-        
-        socket.on('disconnect', function() {
-            console.log('A user is disconnect.');
+    io.on('connection', async function(socket) {
+        try {
+            console.log('A user is connected.');
+            const userId = socket.user._id;
+            socket.join(userId);
             const countMultiDevicesOnline = numClientsInRoom(io, '/', userId);
-            console.log(countMultiDevicesOnline);
-            if (countMultiDevicesOnline === 0) {
-                // TODO: update online status -> false
+            if (countMultiDevicesOnline === 1) {
+                await userRepository.updateOne({
+                    where: {
+                        _id: userId
+                    },
+                    data: {
+                        isOnline: true
+                    }
+                });
             }
-        })
+            console.log(countMultiDevicesOnline);
+            // ----------------------
+            // ------INIT EVENT------
+            // ----------------------
+            message.initEvent(socket);
+            room.initEvent(socket);
+            
+            socket.on('disconnect', async function() {
+                try {
+                    console.log('A user is disconnect.');
+                    const countMultiDevicesOnline = numClientsInRoom(io, '/', userId);
+                    console.log(countMultiDevicesOnline);
+                    if (countMultiDevicesOnline === 0) {
+                        await userRepository.updateOne({
+                            where: {
+                                _id: userId
+                            },
+                            data: {
+                                isOnline: false
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            })
+        } catch (error) {
+            console.error(error);            
+        }
     });
 };
 

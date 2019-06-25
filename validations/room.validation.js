@@ -4,10 +4,10 @@ const Constants = require('../common/constants');
 const createRoom = function() {
     return {
         body: {
-            name: Joi.string().alphanum().max(100).required(),
+            name: Joi.string().alphanum().max(100),
             members: Joi.array().items(Joi.string().regex(Constants.REGEX.OBJECT_ID)).required().max(10),
             lastMessage: Joi.string().regex(Constants.REGEX.OBJECT_ID),
-            type: Joi.string().valid(['individual', 'room']).required()
+            type: Joi.string().valid(['individual', 'room'])
         }
     };
 };

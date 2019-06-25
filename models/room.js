@@ -7,7 +7,6 @@ function limitMembers(members) {
 const roomSchema = new mongoose.Schema({
     name: {
         type: String,
-        min: 3,
         max: 100,
     },
     author: {

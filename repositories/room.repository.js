@@ -6,19 +6,31 @@ module.exports = class RoomRepository extends BaseRepository {
         super('Room');
     }
 
+    async getAll(options) {
+        const rooms = await super.getAll(options);
+        return rooms.map(room => {
+            room.name = room.name || getNameRoom(room.members, options.author.toString(), room.type);
+            return room;
+        })
+    }
+
+    async getOne(options) {
+        const room = await super.getOne(options);
+        room.name = room.name || getNameRoom(room.members, options.author.toString(), room.type);
+        return room;
+    }
+
     async create({ members, name, author, type, lastMessage }) {
         if (type === 'individual') {
             const existedRoom = await Room.findOne({
-                members: {
-                    $all: members
-                }
+                members
             }).lean();
             if (existedRoom) {
                 return existedRoom;
             }
         }
 
-        if (members.length <= 1) {
+        if (members.length < 1) {
             throw new Error('NOT_VALID_MEMBERS');
         }
 
@@ -29,6 +41,7 @@ module.exports = class RoomRepository extends BaseRepository {
             lastMessage,
             type
         });
+        room.name = room.name || getNameRoom(members, author, type);
         return room.toObject();
     }
 
@@ -60,3 +73,21 @@ module.exports = class RoomRepository extends BaseRepository {
         return room;
     }
 };
+
+function getNameRoom(members, author, type) {
+    if (type === 'individual') {
+        if (members.length === 1) {
+            return members[0].username;
+        }
+        return members.find(member => member._id.toString() !== author).username;
+    }
+    return members.reduce((result, member, index) => {
+        if (index === 0) {
+            return member.username;
+        }
+        if (member._id.toString() === author.toString()) {
+            return result;
+        }
+        return result + ', ' + member.username;
+    }, '');
+}

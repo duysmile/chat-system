@@ -1,21 +1,29 @@
 const Constants = require('../common/constants'); 
 const { ObjectId } = require('mongodb');
 const { ResponseSuccess } = require('../helpers/response.helper');
-const User = require('../models/user');
 const bcrypt = require('bcrypt');
 const _ = require('lodash');
 const jwtHelper = require('../helpers/jwt.helper');
 const mailHelper = require('../helpers/mail.helper');
-
-const conditionNotDeleted = { 
-    deletedAt: { $exists: false },
-};
+const { userRepository } = require('../repositories/index');
 
 // Controller -----------------------------------
 
 const getListUsers = async function(req, res, next) {
     try {
-        const listUsers = await User.find(conditionNotDeleted).select('-password -token').lean();
+        const {page, limit, ...query} = _.omitBy(req.query, _.isNil);
+        if (!!query.username) {
+            query.username = {
+                $regex: new RegExp(query.username, 'ig')
+            };
+        }
+
+        const listUsers = await userRepository.getAll({
+            page,
+            limit,
+            where: query,
+            fields: '-password -token'
+        });
 
         return ResponseSuccess(Constants.SUCCESS.GET_LIST_USERS, listUsers, res);
     } catch (error) {
@@ -27,7 +35,12 @@ const getUserById = async function(req, res, next) {
     try {
         const userId = req.params.id;
 
-        const user = await User.findOne({ ...conditionNotDeleted, _id: ObjectId(userId) }).select('-password -token').lean();
+        const user = await userRepository.getOne({ 
+            where: {
+                _id: ObjectId(userId)
+            },
+            fields: '-password -token' 
+        });
 
         if (!user) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
@@ -51,7 +64,7 @@ const createUser = async function(req, res, next) {
         
         const salt = bcrypt.genSaltSync(2);
         const hashPassword = bcrypt.hashSync(password, salt);
-        const newUser = await User.create({ 
+        const newUser = await userRepository.create({ 
             username, 
             email,
             gender,
@@ -71,9 +84,12 @@ const deleteUser = async function(req, res, next) {
     try {
         const userId = req.params.id;
 
-        const dataDelete = await User.findOneAndDelete({ ...conditionNotDeleted, _id: ObjectId(userId) })
-            .select('-password -token')
-            .lean();
+        const dataDelete = await userRepository.deleteOne({
+            where: {
+                _id: ObjectId(userId) 
+            },
+            fields: '-password -token'
+        });
         if (!dataDelete) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
         }
@@ -103,9 +119,13 @@ const updateUser = async function(req, res, next) {
         newUser = _.omitBy(newUser, _.isNil);
         
         const updateInfo = { $set: newUser };
-        const dataUpdate = await User.findOneAndUpdate({ ...conditionNotDeleted, _id: ObjectId(userId) }, updateInfo, { new: true })
-            .select('-password -token')
-            .lean();
+        const dataUpdate = await userRepository.getOneAndUpdate({
+            where: {
+                _id: userId
+            },
+            data: updateInfo,
+            fields: '-password -token'
+        });
         if (!dataUpdate) {
             return next(new Error(Constants.ERROR.NOT_EXISTED_USER));
         }
@@ -121,9 +141,14 @@ const forgotPassword = async (req, res, next) => {
         const { email } = req.body;
         const token = jwtHelper.generateToken({ email, resetPassword: true }, { expiresIn: 10 * 60 });
 
-        const isExistedEmail = await User.findOneAndUpdate({ ...conditionNotDeleted, email }, {
-            $set: { token }
-        }, { new: true }).lean();
+        const isExistedEmail = await userRepository.getOneAndUpdate({ 
+            where: {
+                email 
+            }, 
+            data: {
+                $set: { token }
+            }
+        });
         if (!isExistedEmail) {
             return next(new Error('EMAIL_NOT_EXISTED'));
         }
@@ -141,9 +166,15 @@ const resetPassword = async (req, res, next) => {
         const salt = bcrypt.genSaltSync(2);
         const hashPassword = bcrypt.hashSync(password, salt);
         
-        const requestingChangePassword = await User.findOneAndUpdate({ ...conditionNotDeleted, email, token: code }, {
-            $set: { password: hashPassword }
-        }).lean();
+        const requestingChangePassword = await userRepository.getOneAndUpdate({ 
+            where: {
+                email, 
+                token: code 
+            }, 
+            data: {
+                $set: { password: hashPassword }
+            }
+        });
         if (!requestingChangePassword) {
             return next(new Error('ERROR_RESET_PASSWORD'));
         }

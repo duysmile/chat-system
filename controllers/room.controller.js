@@ -13,6 +13,7 @@ const getAll = async function(req, res, next = function(err) {
         };
         
         const rooms = await roomRepository.getAll({
+            author,
             limit,
             page,
             where: condition,
@@ -53,21 +54,24 @@ const create =  async function(req, res, next = function(err) {
 
         const author = req.user._id;
         const {
-            name,
+            // name,
             members,
             lastMessage,
-            type
+            // type
         } = req.body;
 
         // remove all duplicate member
         let listMembers = Array.from(new Set(members));
-        const existedMembers = await userRepository.count({ 
-            _id: { 
-                $in: members 
-            } 
+        const existedMembers = await userRepository.getAll({ 
+            where: {
+                _id: { 
+                    $in: members 
+                }
+            },
+            fields: 'username'
         });
 
-        if (existedMembers !== members.length) {
+        if (existedMembers.length !== members.length) {
             return next(new Error('A member in list is not existed!'));
         }
 
@@ -75,9 +79,12 @@ const create =  async function(req, res, next = function(err) {
         if (!isExistedAuthorInMembers) {
             listMembers = listMembers.concat(author);
         }
+
+        const type = listMembers.length <= 2 ? 'individual' : 'room';
+        // const name = '';
         
         const room = await roomRepository.create({
-            name,
+            // name,
             author,
             type,
             lastMessage,
@@ -97,11 +104,18 @@ const getById = async (req, res, next = function(err) {
         const author = req.user._id;
         const room = req.params.id;
         const existedRoom = await roomRepository.getOne({
+            author,
             where: { 
                 _id: room,
                 members: author
             },
-            fields: '_id name members'
+            fields: '_id name members type',
+            populate: [
+                {
+                    path: 'members',
+                    select: 'username isOnline'
+                }
+            ]
         });
         if (!existedRoom) {
             return next(new Error('NOT_EXISTED_ROOM'));
