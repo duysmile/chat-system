@@ -62,16 +62,13 @@ const create =  async function(req, res, next = function(err) {
 
         // remove all duplicate member
         let listMembers = Array.from(new Set(members));
-        const existedMembers = await userRepository.getAll({ 
-            where: {
-                _id: { 
-                    $in: members 
-                }
-            },
-            fields: 'username'
+        const countExistedMembers = await userRepository.count({ 
+            _id: { 
+                $in: members 
+            }
         });
 
-        if (existedMembers.length !== members.length) {
+        if (countExistedMembers !== members.length) {
             return next(new Error('A member in list is not existed!'));
         }
 
@@ -109,7 +106,7 @@ const getById = async (req, res, next = function(err) {
                 _id: room,
                 members: author
             },
-            fields: '_id name members type',
+            fields: '_id name members type author',
             populate: [
                 {
                     path: 'members',

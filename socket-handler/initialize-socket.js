@@ -18,6 +18,10 @@ exports.initialize = (io) => {
                         isOnline: true
                     }
                 });
+                socket.broadcast.emit('status', {
+                    action: 'ONLINE',
+                    data: userId
+                });
             }
             console.log(countMultiDevicesOnline);
             // ----------------------
@@ -39,6 +43,10 @@ exports.initialize = (io) => {
                             data: {
                                 isOnline: false
                             }
+                        });
+                        socket.broadcast.emit('status', {
+                            action: 'OFFLINE',
+                            data: userId
                         });
                     }
                 } catch (error) {

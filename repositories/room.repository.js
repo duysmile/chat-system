@@ -1,5 +1,6 @@
 const BaseRepository = require('./base.repository');
 const Room = require('../models/room');
+const mongoose = require('mongoose');
 
 module.exports = class RoomRepository extends BaseRepository {
     constructor() {
@@ -16,7 +17,8 @@ module.exports = class RoomRepository extends BaseRepository {
 
     async getOne(options) {
         const room = await super.getOne(options);
-        room.name = room.name || getNameRoom(room.members, options.author.toString(), room.type);
+        const author = options.author || '';
+        room.name = room.name || getNameRoom(room.members, author.toString(), room.type);
         return room;
     }
 
@@ -34,15 +36,25 @@ module.exports = class RoomRepository extends BaseRepository {
             throw new Error('NOT_VALID_MEMBERS');
         }
 
-        const room = await Room.create({
+        const room = await Room.findOneAndUpdate({ _id: mongoose.Types.ObjectId() }, {
             name,
             author,
             members,
             lastMessage,
             type
-        });
-        room.name = room.name || getNameRoom(members, author, type);
-        return room.toObject();
+        }, {
+            new: true,
+            upsert: true,
+            runValidators: true,
+            setDefaultsOnInsert: true,
+            populate: [{
+                path: 'members',
+                select: 'username'
+            }]
+        }).lean();
+        
+        room.name = room.name || getNameRoom(room.members, author, type);
+        return room;
     }
 
     async addMember({ author, id, members }) {
@@ -85,9 +97,9 @@ function getNameRoom(members, author, type) {
         if (index === 0) {
             return member.username;
         }
-        if (member._id.toString() === author.toString()) {
-            return result;
-        }
+        // if (member._id.toString() === author.toString()) {
+        //     return result;
+        // }
         return result + ', ' + member.username;
     }, '');
 }

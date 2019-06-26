@@ -54,8 +54,8 @@ const createMessage = async (socket, data, callback) => {
 
     const [messageResponseData, roomResponseData] = await Promise.all([messageRequest, roomRequest]);
     
-    roomResponseData.data.members.map(member => {
-        socket.to(member.toString()).broadcast.emit('messages', {
+    roomResponseData. data.members.map(member => {
+        socket.to(member._id.toString()).broadcast.emit('messages', {
             action: 'RECEIVE',
             message: messageResponseData.data
         });

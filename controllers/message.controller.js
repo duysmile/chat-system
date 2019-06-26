@@ -12,6 +12,7 @@ const create =  async function(req, res, next = function(err) {
         // pick/omit cua lodash
         
         const existedRoom = await roomRepository.getOne({
+            author,
             where: {
                 _id: data.room,
                 members: author
