@@ -150,9 +150,9 @@ const getById = async (req, res, next = function(err) {
     }
 };
 
-const deleteById = async function(req, res, next = function(err) {
+const deleteById = async (req, res, next = function(err) {
     return Promise.reject(err);
-}) {
+}) => {
     try {
         const author = req.user._id;        
         const { id } = req.params;
