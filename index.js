@@ -18,7 +18,7 @@ const socketHandler = require('./socket-handler');
 // const dbName = 'node03';
 
 const models = require('./models');
-const port = 3001;
+const port = 8080;
 
 models.connectDB()
     .then(console.log('DB connected!'))
