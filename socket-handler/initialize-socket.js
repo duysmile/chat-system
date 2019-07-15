@@ -1,5 +1,5 @@
 const message = require('./message');
-const room = require('./room');
+const video = require('./video');
 const { userRepository } = require('../repositories');
 
 exports.initialize = (io) => {
@@ -28,9 +28,11 @@ exports.initialize = (io) => {
             // ------INIT EVENT------
             // ----------------------
             message.initEvent(socket);
-            room.initEvent(socket);
+            video.initEvent(socket);
             
             socket.on('disconnect', async function() {
+                io.sockets.emit('user-left', socket.id)
+
                 try {
                     console.log('A user is disconnect.');
                     const countMultiDevicesOnline = numClientsInRoom(io, '/', userId);

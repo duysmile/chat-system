@@ -5,15 +5,15 @@ const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     auth: {
         type: "login", // default
-        user: "bin210697@gmail.com",
-        pass: "efxpaoaahufkhjue"
+        user: process.env.EMAIL_ID,
+        pass: process.env.EMAIL_PASS
     }
 });
 
 exports.sendMail = (receiveEmail, type, data) => {
     return new Promise((resolve, reject) => {
         let mailOptions = {
-            from: 'bin210697@mail.com',
+            from: process.env.EMAIL_ID,
         };
         if (type === 'FORGOT_PASSWORD') {
             mailOptions.to = receiveEmail;
